@@ -1,0 +1,37 @@
+# Площади. Всё, чего здесь нет (здания, поля, сады, спортплощадки),
+# сливается с фоном. Фон (тип 0x4b) mkgmap добавляет сам.
+# Порядок наложения задаётся в TYP, раздел [_drawOrder].
+
+# Лес
+landuse=forest | natural=wood [0x50 resolution 18]
+
+# Парки и сады, луга и газоны: два оттенка зелени сверх SPEC.md (проба)
+leisure=park | leisure=garden | landuse=village_green | landuse=recreation_ground [0x17 resolution 20]
+landuse=meadow | natural=grassland [0x52 resolution 20]
+landuse=grass [0x52 resolution 22]
+
+# Виноградник, хмельник, гольф-поле: светло-зелёные с узором (добавлены сверх SPEC.md)
+landuse=vineyard [0x4e resolution 20]
+landuse=hop_garden | (landuse=orchard & (trees=hop_plants | trees=hops | produce=hop)) [0x4f resolution 20]
+leisure=golf_course [0x18 resolution 20]
+
+# Застройка. В SPEC.md теги не перечислены; взяты жилые, торговые и деловые кварталы.
+landuse=residential | landuse=commercial | landuse=retail [0x01 resolution 18]
+
+# Вода
+natural=water | waterway=riverbank | landuse=reservoir [0x3c resolution 18]
+
+# Закрытая территория: серая штриховка
+landuse=military | aeroway=aerodrome [0x04 resolution 20]
+
+# Промзона и карьер: со 2-го экрана
+landuse=industrial | landuse=quarry [0x0c resolution 22]
+
+# Болото: синие штрихи
+natural=wetland [0x51 resolution 22]
+
+# Кладбище: крестики
+landuse=cemetery | amenity=grave_yard [0x1a resolution 22]
+
+# Пешеходная площадь (линия highway=pedestrian — в lines)
+highway=pedestrian & area=yes [0x13 resolution 24]

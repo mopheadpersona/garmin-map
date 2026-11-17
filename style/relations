@@ -1,0 +1,12 @@
+# Отношения. Маршруты переносятся с отношений на линии-участники (шаг 5д);
+# сами линии маршрутов рисуются в lines.
+# Мультиполигоны mkgmap собирает сам, правила для них лежат в polygons.
+
+# Размеченный веломаршрут любого уровня (международный, национальный, региональный, местный)
+type=route & route=bicycle { apply { set gm:bike=yes } }
+
+# МТБ-маршрут
+type=route & route=mtb { apply { set gm:mtb=yes } }
+
+# Государственная граница
+type=boundary & boundary=administrative & admin_level=2 { apply { set gm:border=yes } }

@@ -1,0 +1,47 @@
+# Точки.
+
+# ---------------------------------------------------------------------------
+# Названия населённых пунктов (шаг 5в). Размер подписи по классу задаётся в TYP.
+# Берутся только точки place=*, не площади.
+# ---------------------------------------------------------------------------
+place=city    & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0300 resolution 18]
+place=town    & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0700 resolution 18]
+place=village & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0a00 resolution 20]
+place=hamlet  & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0d00 resolution 22]
+
+# ---------------------------------------------------------------------------
+# Значки. Чем важнее в дороге, тем раньше появляется:
+#   экран 2 (разрешение 22) — вода, шелтер, супермаркет, заправка, станция;
+#   экран 3 (разрешение 23) — мелкие магазины и пекарни, перевал, велоремонт;
+#   экран 4 (разрешение 24) — брод, общественный туалет.
+# Подписей у значков нет, кроме высоты перевала.
+# Объекты, нарисованные в OSM площадью (магазин-здание), получают точку
+# благодаря ключу mkgmap --add-pois-to-areas.
+# Не показываем: церкви, шлагбаумы и ворота (решение заказчика).
+# ---------------------------------------------------------------------------
+
+# Экран 2: то, ради чего меняют планы
+amenity=drinking_water [0x5000 resolution 22]
+natural=spring & drinking_water!=no [0x6511 resolution 22]
+# Шелтеры двух видов: открытый навес и закрытый домик. Домиком отмечаются и
+# хижины без обслуживания (tourism=wilderness_hut), как бы ни был записан их
+# shelter_type. Остальные шелтеры (погодные укрытия-«грибки», беседки,
+# остановки, без типа) не показываем.
+amenity=shelter & shelter_type=lean_to   [0x6402 resolution 22]
+amenity=shelter & shelter_type=basic_hut [0x6403 resolution 22]
+tourism=wilderness_hut                   [0x6403 resolution 22]
+shop=supermarket [0x2e02 resolution 22]
+amenity=fuel [0x2f01 resolution 22]
+(railway=station | railway=halt) & station!=subway & subway!=yes [0x2f08 resolution 22]
+
+# Экран 3: мелкие продуктовые (их в городе в несколько раз больше, чем супермаркетов)
+shop=convenience | shop=bakery [0x2e02 resolution 23]
+mountain_pass=yes & ele=* { name '${ele}' } [0x6614 resolution 23]
+mountain_pass=yes [0x6614 resolution 23]
+
+# Велоремонт: станции самообслуживания и веломагазины
+amenity=bicycle_repair_station | shop=bicycle [0x2f03 resolution 23]
+
+# Экран 4: только вплотную
+ford=yes [0x6508 resolution 24]
+amenity=toilets & access!=private & access!=customers & access!=no [0x4e00 resolution 24]

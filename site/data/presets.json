@@ -1,0 +1,122 @@
+[
+ {
+  "id": "contrast",
+  "title": {
+   "en": "High-contrast streets (trial)",
+   "cs": "Kontrastní ulice (zkušební)",
+   "ru": "Контрастные улицы (проба)"
+  },
+  "note": {
+   "en": "A trial against “white on white”: a slightly darker background and darker casings for streets and gravel roads. Colours picked by eye, not on a device.",
+   "cs": "Pokus, jak se zbavit „bílé na bílé“: o něco tmavší pozadí a tmavší obrysy ulic a šotolinových cest. Barvy jsou zvolené od oka, na přístroji ověřené nejsou.",
+   "ru": "Проба против «белого по белому»: фон чуть темнее, обводка улиц и гравийки темнее. Цвета подобраны на глаз, не по прибору."
+  },
+  "colors": {
+   "BG": "#E7E4D8",
+   "WHITE_EDGE": "#5C5447",
+   "GRAVEL_EDGE": "#7A6547",
+   "INDUSTRIAL": "#D2CFC5",
+   "MEADOW": "#DCE7BE"
+  }
+ },
+ {
+  "id": "wahoo",
+  "title": {
+   "en": "In the spirit of Wahoo ELEMNT (trial)",
+   "cs": "Ve stylu Wahoo ELEMNT (zkušební)",
+   "ru": "В духе Wahoo ELEMNT (проба)"
+  },
+  "note": {
+   "en": "Taken from photos of ROAM and BOLT screens, with road classes following the device theme: grey streets without outline, yellow and sand main roads outlined in black, blue cycleways, mint forest, cyan water. Widths and what is shown stay as in this map.",
+   "cs": "Podle fotografií displejů ROAM a BOLT; třídy silnic podle motivu přístroje: šedé ulice bez obrysu, žluté a pískové hlavní silnice s černým obrysem, modré cyklostezky, mátově zelený les, tyrkysová voda. Šířky čar a obsah mapy se nemění.",
+   "ru": "Снято с фото экранов ROAM и BOLT, классы дорог — по теме прибора: серые улицы без обводки, жёлтые и песочные главные дороги в чёрной обводке, синие велодорожки, мятный лес, бирюзовая вода. Толщины и набор объектов остаются как в этой карте."
+  },
+  "colors": {
+   "BG": "#DCDFDD",
+   "FOREST": "#A9ECC5",
+   "PARK": "#19B84F",
+   "MEADOW": "#DCDFDD",
+   "PLANTATION": "#DCDFDD",
+   "PLANTATION_MARK": "#DCDFDD",
+   "BUILTUP": "#DCDFDD",
+   "INDUSTRIAL": "#DCDFDD",
+   "CEMETERY": "#DCDFDD",
+   "CEMETERY_CROSS": "#DCDFDD",
+   "WATER": "#5FD6E0",
+   "WETLAND": "#2FB8C4",
+   "CLOSED_HATCH": "#8A8A8A",
+   "GREEN": "#9A5A1E",
+   "GREEN_EDGE": "#000000",
+   "PRIMARY": "#EDB866",
+   "PRIMARY_EDGE": "#000000",
+   "SECONDARY": "#E6DA4A",
+   "SECONDARY_EDGE": "#000000",
+   "WHITE": "#909090",
+   "WHITE_EDGE": "#909090",
+   "PEDESTRIAN": "#B0B0B0",
+   "PEDESTRIAN_EDGE": "#B0B0B0",
+   "CYCLE": "#2A66C8",
+   "MTB": "#1E9BE0",
+   "RAIL": "#444444",
+   "NO_ENTRY": "#D32020",
+   "GRAVEL": "#5A5A5A",
+   "GRAVEL_EDGE": "#5A5A5A",
+   "BAD_TRACK": "#555555",
+   "PATH": "#777777",
+   "HARD_PATH": "#333333",
+   "FERRY": "#555555",
+   "BORDER": "#777777",
+   "LABEL": "#000000"
+  }
+ },
+ {
+  "id": "roam3",
+  "title": {
+   "en": "In the spirit of Wahoo ROAM 3 (trial)",
+   "cs": "Ve stylu Wahoo ROAM 3 (zkušební)",
+   "ru": "В духе Wahoo ROAM 3 (проба)"
+  },
+  "note": {
+   "en": "Picked from screenshots of the ROAM 3 map: grey built-up blocks with white streets, cream and tan main roads, a red motorway, green cycleways, pale green parks, blue water, brown paths. No theme file for this device is published, so road classes are matched by eye.",
+   "cs": "Podle snímků mapy z ROAM 3: šedé bloky zástavby s bílými ulicemi, krémové a pískové hlavní silnice, červená dálnice, zelené cyklostezky, světle zelené parky, modrá voda, hnědé pěšiny. Soubor motivu pro tento přístroj není zveřejněný, barvy tříd silnic jsou přiřazené od oka.",
+   "ru": "Подобрано по снимкам карты ROAM 3: серые кварталы с белыми улицами, кремовые и песочные главные дороги, красная автомагистраль, зелёные велодорожки, бледно-зелёные парки, синяя вода, коричневые тропы. Файла темы для этого прибора в открытом доступе нет, классы дорог сопоставлены на глаз."
+  },
+  "colors": {
+   "BG": "#ECEDF0",
+   "BUILTUP": "#D4D4D6",
+   "INDUSTRIAL": "#ECE4D9",
+   "FOREST": "#B5CA9A",
+   "PARK": "#A6CB83",
+   "MEADOW": "#CFDDB8",
+   "PLANTATION": "#CFDDB8",
+   "PLANTATION_MARK": "#A9BF8C",
+   "CEMETERY": "#D3DCC8",
+   "CEMETERY_CROSS": "#9A9A9C",
+   "WATER": "#7CBBF7",
+   "WETLAND": "#6FA9E0",
+   "CLOSED_HATCH": "#9A9A9C",
+   "GREEN": "#D9534A",
+   "GREEN_EDGE": "#A8382F",
+   "PRIMARY": "#D9A86C",
+   "PRIMARY_EDGE": "#8A6A4A",
+   "SECONDARY": "#F3E6A6",
+   "SECONDARY_EDGE": "#A89A5A",
+   "WHITE": "#FAFAFA",
+   "WHITE_EDGE": "#909092",
+   "PEDESTRIAN": "#F0F0F2",
+   "PEDESTRIAN_EDGE": "#B0B0B2",
+   "CYCLE": "#17C888",
+   "MTB": "#2A69D9",
+   "RAIL": "#777779",
+   "NO_ENTRY": "#D32020",
+   "GRAVEL": "#E8DCC8",
+   "GRAVEL_EDGE": "#8A6A4A",
+   "BAD_TRACK": "#7A5A40",
+   "PATH": "#8A5A3C",
+   "HARD_PATH": "#5C3A22",
+   "FERRY": "#4A7FCC",
+   "BORDER": "#88888A",
+   "LABEL": "#1A1A1A"
+  }
+ }
+]

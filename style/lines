@@ -1,0 +1,302 @@
+# Линии: дороги, грунт, тропы, велосипедное, маршруты, железная дорога, вода.
+#
+# Как устроено:
+#   1. Сначала каждой линии назначается класс (тег gm:cls), типы не выдаются.
+#   2. Потом класс превращается в тип Garmin — свой для каждого диапазона
+#      разрешений, потому что толщина линии в TYP одна на тип и от масштаба
+#      не зависит. Четыре ступени толщин:
+#        0x14LSS  разрешение 24      экран 4, вплотную
+#        0x15LSS  разрешение 23      экран 3, крупно
+#        0x16LSS  разрешение 22      экран 2, окрестности
+#        0x17LSS  разрешение 18–21   экран 1, обзор
+#      L — слой: 0 тоннели, 1 дороги, 3 мосты, 4 накладки (2 не занят).
+#      SS — место в порядке отрисовки (больше = выше), одинаковое во всех
+#      ступенях. 0x180SS — линии, одинаковые на всех масштабах.
+#      Таблица типов, цветов и толщин — в typ/make_typ.py.
+
+# ---------------------------------------------------------------------------
+# 1. Классы дорог
+# ---------------------------------------------------------------------------
+
+# Площадные объекты рисуются в polygons
+highway=* & area=yes { set gm:cls=none }
+
+# Зелёное — «нельзя вообще»: автомагистрали, дороги для автомобилей
+# (motorroad=yes) и большие дороги с bicycle=no. Обычные улицы с bicycle=no
+# зелёными не делаем — они идут в «проезд запрещён» ниже.
+highway=* & motorroad=yes { set gm:ban=yes }
+bicycle=no & (highway=trunk | highway=trunk_link | highway=primary | highway=primary_link | highway=secondary | highway=secondary_link)
+    { set gm:ban=yes }
+
+highway=motorway      & gm:cls!=* { set gm:cls=green_wide }
+highway=motorway_link & gm:cls!=* { set gm:cls=green_link }
+
+gm:ban=yes & gm:cls!=* & (highway=trunk | highway=primary | highway=secondary)
+    { set gm:cls=green_wide }
+gm:ban=yes & gm:cls!=* & (highway=trunk_link | highway=primary_link | highway=secondary_link | highway=tertiary | highway=tertiary_link | highway=unclassified | highway=residential | highway=living_street | highway=service | highway=road)
+    { set gm:cls=green_link }
+
+# Проезд запрещён: местные дороги с access=no/private (если велосипедам
+# явно не разрешено) или с bicycle=no.
+(access=no | access=private) & gm:cls!=* & bicycle!=yes & bicycle!=designated & bicycle!=permissive
+  & (highway=tertiary | highway=tertiary_link | highway=unclassified | highway=residential | highway=living_street | highway=service | highway=road)
+    { set gm:cls=noaccess }
+bicycle=no & gm:cls!=*
+  & (highway=tertiary | highway=tertiary_link | highway=unclassified | highway=residential | highway=living_street | highway=service | highway=road)
+    { set gm:cls=noaccess }
+
+# Дороги по классам
+gm:cls!=* & (highway=trunk | highway=trunk_link | highway=primary | highway=primary_link)
+    { set gm:cls=primary }
+gm:cls!=* & (highway=secondary | highway=secondary_link)
+    { set gm:cls=secondary }
+gm:cls!=* & (highway=tertiary | highway=tertiary_link | highway=unclassified)
+    { set gm:cls=tertiary }
+gm:cls!=* & (highway=residential | highway=living_street | highway=service | highway=road)
+    { set gm:cls=street }
+
+highway=pedestrian & gm:cls!=* { set gm:cls=pedestrian }
+highway=cycleway   & gm:cls!=* { set gm:cls=cycleway }
+highway=steps      & gm:cls!=* { set gm:cls=steps }
+
+# --- Грунт и тропы ---
+
+# Тротуары и переходы не показываем
+highway=footway & (footway=sidewalk | footway=crossing | footway=traffic_island | footway=access_aisle)
+    { set gm:cls=none }
+
+# Велодорожка: path/footway, предназначенные велосипедам
+(highway=path | highway=footway) & bicycle=designated & gm:cls!=* { set gm:cls=cycleway }
+
+# Асфальтовая дорожка: твёрдое покрытие важнее класса
+(highway=track | highway=path | highway=footway) & gm:cls!=*
+  & (surface=asphalt | surface=paved | surface=concrete | surface=concrete:plates | surface=concrete:lanes | surface=paving_stones)
+    { set gm:cls=paved_path }
+
+# Грунтовая дорога: сначала tracktype (твёрдость), потом surface, без тегов — двухколейка
+highway=track & gm:cls!=* & (tracktype=grade1 | tracktype=grade2) { set gm:cls=gravel }
+highway=track & gm:cls!=* & tracktype=grade3 { set gm:cls=twintrack }
+highway=track & gm:cls!=* & (tracktype=grade4 | tracktype=grade5) { set gm:cls=badtrack }
+highway=track & gm:cls!=* & (surface=compacted | surface=fine_gravel) { set gm:cls=gravel }
+highway=track & gm:cls!=* & (surface=ground | surface=grass | surface=sand | surface=dirt | surface=earth | surface=mud)
+    { set gm:cls=badtrack }
+highway=track & gm:cls!=* { set gm:cls=twintrack }
+
+# Подземный переход показываем и в городе
+highway=footway & tunnel=yes & gm:cls!=* { set gm:cls=path }
+
+# Остальные footway — только вне города: целиком за пределами жилой застройки
+highway=footway & gm:cls!=* & is_in(landuse,residential,none)=false { set gm:cls=none }
+
+# Тропы. Подпись — оценка S из mtb:scale (берётся первая цифра: «1+» -> S1)
+(highway=path | highway=footway) & gm:cls!=* & mtb:scale ~ '[2-6].*'
+    { set gm:cls=hardpath; name 'S${mtb:scale|substring:"0:1"}' }
+(highway=path | highway=footway) & gm:cls!=* & mtb:scale ~ '[01].*'
+    { set gm:cls=path; name 'S${mtb:scale|substring:"0:1"}' }
+(highway=path | highway=footway) & gm:cls!=* { set gm:cls=path }
+
+# Строится: только будущие автомобильные дороги
+highway=construction & gm:cls!=*
+  & construction!=footway & construction!=path & construction!=cycleway & construction!=steps
+  & construction!=track & construction!=pedestrian & construction!=bridleway & construction!=platform
+    { set gm:cls=construction }
+
+# --- Признаки: мост, тоннель ---
+highway=* & bridge=* & bridge!=no { set gm:br=yes }
+highway=* & tunnel=yes { set gm:tun=yes }
+
+# Стрелок одностороннего движения и стрелок на съездах нет: рябят (решение заказчика).
+
+# ---------------------------------------------------------------------------
+# 2. Накладки: рисуются вместе с дорогой (continue)
+# ---------------------------------------------------------------------------
+
+# Маршруты из отношений. Теги gm:bike и gm:mtb ставит файл relations.
+# Пунктир веломаршрута идёт с одной стороны линии, точки МТБ-маршрута —
+# с другой. У широких дорог отступ больше, иначе накладка спряталась бы
+# под дорогой.
+(gm:bike=yes | gm:mtb=yes) & (gm:cls=primary | gm:cls=secondary | gm:cls=green_wide) { set gm:off=far }
+
+gm:bike=yes & gm:off!=far [0x16401 resolution 22-22 continue]
+gm:bike=yes & gm:off!=far [0x15401 resolution 23-23 continue]
+gm:bike=yes & gm:off!=far [0x14401 resolution 24 continue]
+gm:bike=yes & gm:off=far  [0x16402 resolution 22-22 continue]
+gm:bike=yes & gm:off=far  [0x15402 resolution 23-23 continue]
+gm:bike=yes & gm:off=far  [0x14402 resolution 24 continue]
+
+gm:mtb=yes & gm:off!=far [0x15403 resolution 23-23 continue]
+gm:mtb=yes & gm:off!=far [0x14403 resolution 24 continue]
+gm:mtb=yes & gm:off=far  [0x15404 resolution 23-23 continue]
+gm:mtb=yes & gm:off=far  [0x14404 resolution 24 continue]
+
+# Государственная граница (тег gm:border ставит relations)
+gm:border=yes [0x18001 resolution 18 continue]
+boundary=administrative & admin_level=2 & gm:border!=yes [0x18001 resolution 18 continue]
+
+# Паром
+route=ferry [0x18000 resolution 18 continue]
+
+# ---------------------------------------------------------------------------
+# 3. Тоннели: с 3-го экрана, осветлённые, с пунктирной обводкой.
+#    На экранах 1–2 тоннели не рисуются: на поверхности их нет.
+# ---------------------------------------------------------------------------
+gm:tun=yes & gm:cls=green_wide [0x15016 resolution 23-23 continue]
+gm:tun=yes & gm:cls=green_wide [0x14016 resolution 24]
+gm:tun=yes & gm:cls=green_link [0x15015 resolution 23-23 continue]
+gm:tun=yes & gm:cls=green_link [0x14015 resolution 24]
+gm:tun=yes & gm:cls=primary    [0x15014 resolution 23-23 continue]
+gm:tun=yes & gm:cls=primary    [0x14014 resolution 24]
+gm:tun=yes & gm:cls=secondary  [0x15013 resolution 23-23 continue]
+gm:tun=yes & gm:cls=secondary  [0x14013 resolution 24]
+gm:tun=yes & gm:cls=tertiary   [0x15012 resolution 23-23 continue]
+gm:tun=yes & gm:cls=tertiary   [0x14012 resolution 24]
+gm:tun=yes & (gm:cls=street | gm:cls=noaccess) [0x15010 resolution 23-23 continue]
+gm:tun=yes & (gm:cls=street | gm:cls=noaccess) [0x14010 resolution 24]
+
+# Подземный переход, тропа или велодорожка в тоннеле: белый пунктир поверх дорог
+gm:tun=yes & (gm:cls=path | gm:cls=hardpath | gm:cls=paved_path | gm:cls=cycleway | gm:cls=steps)
+    [0x15405 resolution 23-23 continue]
+gm:tun=yes & (gm:cls=path | gm:cls=hardpath | gm:cls=paved_path | gm:cls=cycleway | gm:cls=steps)
+    [0x14405 resolution 24]
+
+# ---------------------------------------------------------------------------
+# 4. Мосты: с 3-го экрана, та же линия с тёмными бортиками, поверх остальных.
+#    Обычная линия под мостом тоже рисуется (continue).
+# ---------------------------------------------------------------------------
+gm:br=yes & gm:cls=green_wide [0x15316 resolution 23-23 continue]
+gm:br=yes & gm:cls=green_wide [0x14316 resolution 24 continue]
+gm:br=yes & gm:cls=green_link [0x15315 resolution 23-23 continue]
+gm:br=yes & gm:cls=green_link [0x14315 resolution 24 continue]
+gm:br=yes & gm:cls=primary    [0x15314 resolution 23-23 continue]
+gm:br=yes & gm:cls=primary    [0x14314 resolution 24 continue]
+gm:br=yes & gm:cls=secondary  [0x15313 resolution 23-23 continue]
+gm:br=yes & gm:cls=secondary  [0x14313 resolution 24 continue]
+gm:br=yes & gm:cls=tertiary   [0x15312 resolution 23-23 continue]
+gm:br=yes & gm:cls=tertiary   [0x14312 resolution 24 continue]
+gm:br=yes & gm:cls=street     [0x15310 resolution 23-23 continue]
+gm:br=yes & gm:cls=street     [0x14310 resolution 24 continue]
+gm:br=yes & gm:cls=cycleway   [0x15318 resolution 23-23 continue]
+gm:br=yes & gm:cls=cycleway   [0x14318 resolution 24 continue]
+gm:br=yes & (gm:cls=gravel | gm:cls=twintrack) [0x1530a resolution 23-23 continue]
+gm:br=yes & (gm:cls=gravel | gm:cls=twintrack) [0x1430a resolution 24 continue]
+
+# Пешеходный мостик: тропа с бортиками
+gm:br=yes & (gm:cls=path | gm:cls=hardpath | gm:cls=paved_path | gm:cls=badtrack | gm:cls=steps)
+    [0x15305 resolution 23-23 continue]
+gm:br=yes & (gm:cls=path | gm:cls=hardpath | gm:cls=paved_path | gm:cls=badtrack | gm:cls=steps)
+    [0x14305 resolution 24 continue]
+
+# ---------------------------------------------------------------------------
+# 5. Классы -> типы Garmin по ступеням толщины
+# ---------------------------------------------------------------------------
+
+# Автомагистраль и большие дороги с запретом: с обзорного экрана
+gm:cls=green_wide [0x17116 resolution 18-21 continue]
+gm:cls=green_wide [0x16116 resolution 22-22 continue]
+gm:cls=green_wide [0x15116 resolution 23-23 continue]
+gm:cls=green_wide [0x14116 resolution 24]
+
+# Съезды и дороги для автомобилей помельче
+gm:cls=green_link [0x17115 resolution 21-21 continue]
+gm:cls=green_link [0x16115 resolution 22-22 continue]
+gm:cls=green_link [0x15115 resolution 23-23 continue]
+gm:cls=green_link [0x14115 resolution 24]
+
+# Дорога I класса
+gm:cls=primary [0x17114 resolution 18-21 continue]
+gm:cls=primary [0x16114 resolution 22-22 continue]
+gm:cls=primary [0x15114 resolution 23-23 continue]
+gm:cls=primary [0x14114 resolution 24]
+
+# Дорога II класса
+gm:cls=secondary [0x17113 resolution 19-21 continue]
+gm:cls=secondary [0x16113 resolution 22-22 continue]
+gm:cls=secondary [0x15113 resolution 23-23 continue]
+gm:cls=secondary [0x14113 resolution 24]
+
+# Дорога III класса, местная
+gm:cls=tertiary [0x17112 resolution 20-21 continue]
+gm:cls=tertiary [0x16112 resolution 22-22 continue]
+gm:cls=tertiary [0x15112 resolution 23-23 continue]
+gm:cls=tertiary [0x14112 resolution 24]
+
+# Улица, проезд: со 2-го экрана
+gm:cls=street [0x16110 resolution 22-22 continue]
+gm:cls=street [0x15110 resolution 23-23 continue]
+gm:cls=street [0x14110 resolution 24]
+
+# Велодорожка: со 2-го экрана, поверх дорог
+gm:cls=cycleway [0x16118 resolution 22-22 continue]
+gm:cls=cycleway [0x15118 resolution 23-23 continue]
+gm:cls=cycleway [0x14118 resolution 24]
+
+# Хорошая гравийка: со 2-го экрана
+gm:cls=gravel [0x1610a resolution 22-22 continue]
+gm:cls=gravel [0x1510a resolution 23-23 continue]
+gm:cls=gravel [0x1410a resolution 24]
+
+# Двухколейка: со 2-го экрана
+gm:cls=twintrack [0x16109 resolution 22-22 continue]
+gm:cls=twintrack [0x15109 resolution 23-23 continue]
+gm:cls=twintrack [0x14109 resolution 24]
+
+# Асфальтовая дорожка, плохой грунт, тропы: с 3-го экрана
+gm:cls=paved_path [0x15108 resolution 23-23 continue]
+gm:cls=paved_path [0x14108 resolution 24]
+gm:cls=badtrack [0x15104 resolution 23-23 continue]
+gm:cls=badtrack [0x14104 resolution 24]
+gm:cls=hardpath [0x15106 resolution 23-23 continue]
+gm:cls=hardpath [0x14106 resolution 24]
+gm:cls=path [0x15105 resolution 23-23 continue]
+gm:cls=path [0x14105 resolution 24]
+
+# Пешеходная зона и лестница: с 4-го экрана
+gm:cls=pedestrian [0x1410f resolution 24]
+gm:cls=steps [0x14107 resolution 24]
+
+# Проезд запрещён: с 3-го экрана. Две линии: серая подложка и белая
+# с красными точками поверх (в одном типе TYP три цвета не помещаются).
+gm:cls=noaccess [0x1510d resolution 23-23 continue]
+gm:cls=noaccess [0x1510e resolution 23-23 continue]
+gm:cls=noaccess [0x1410d resolution 24 continue]
+gm:cls=noaccess [0x1410e resolution 24]
+
+# Дорога строится: с 3-го экрана. Тоже две линии: серые штрихи и белые поверх.
+gm:cls=construction [0x1510b resolution 23-23 continue]
+gm:cls=construction [0x1510c resolution 23-23 continue]
+gm:cls=construction [0x1410b resolution 24 continue]
+gm:cls=construction [0x1410c resolution 24]
+
+# ---------------------------------------------------------------------------
+# 6. Рельсы
+# ---------------------------------------------------------------------------
+
+# Трамвайные пути не показываем (решение заказчика).
+
+# Подъездные и станционные пути: только крупно
+railway=rail & tunnel!=yes & service=* [0x15103 resolution 23-23 continue]
+railway=rail & tunnel!=yes & service=* [0x14103 resolution 24]
+
+railway=rail & tunnel!=yes [0x17103 resolution 18-21 continue]
+railway=rail & tunnel!=yes [0x16103 resolution 22-22 continue]
+railway=rail & tunnel!=yes [0x15103 resolution 23-23 continue]
+railway=rail & tunnel!=yes [0x14103 resolution 24]
+
+# ---------------------------------------------------------------------------
+# 7. Вода
+# ---------------------------------------------------------------------------
+
+# Река: с обзорного экрана; канал — с масштаба ~2 км
+waterway=river & tunnel!=* [0x17101 resolution 18-21 continue]
+waterway=canal & tunnel!=* [0x17101 resolution 20-21 continue]
+(waterway=river | waterway=canal) & tunnel!=* [0x16101 resolution 22-22 continue]
+(waterway=river | waterway=canal) & tunnel!=* [0x15101 resolution 23-23 continue]
+(waterway=river | waterway=canal) & tunnel!=* [0x14101 resolution 24]
+
+# Пересыхающий ручей: синий пунктир, с 3-го экрана
+waterway=stream & intermittent=yes & tunnel!=* [0x15102 resolution 23-23 continue]
+waterway=stream & intermittent=yes & tunnel!=* [0x14102 resolution 24]
+
+# Ручей: с 3-го экрана
+waterway=stream & tunnel!=* [0x15100 resolution 23-23 continue]
+waterway=stream & tunnel!=* [0x14100 resolution 24]
