@@ -33,6 +33,15 @@
       </div>
       <p class="message" id="palette-message" role="status"></p>
     </div>
+    <div class="history" role="group" aria-label="History of changes" data-i18n-label="history">
+      <button type="button" class="history-arrow" id="history-back" aria-label="Step back" data-i18n-label="historyBack">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/></svg>
+      </button>
+      <button type="button" class="history-arrow" id="history-forward" aria-label="Step forward" data-i18n-label="historyForward">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l4-4-4-4"/><path d="M19 10H8a4 4 0 1 0 0 8h1"/></svg>
+      </button>
+      <div class="history-strip" id="history-strip"></div>
+    </div>
     <div id="legend"></div>
   </section>
 

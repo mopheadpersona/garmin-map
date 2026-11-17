@@ -28,11 +28,15 @@ const SAMPLE = {
 const SUB_KINDS = new Set(['casing', 'marks']);
 const STORAGE_KEY = 'garmin-map-palette-v1';
 const LANGUAGE_KEY = 'garmin-map-language-v1';
+const HISTORY_KEY = 'garmin-map-history-v1';
+const HISTORY_LIMIT = 50;
+const MERGE_MS = 600;
 const DEFAULT_LANGUAGE = LANGUAGES[0][0];
 
 const state = {
   names: [], defaults: {}, legend: [], presets: [],
   palette: {},
+  history: { base: {}, steps: [], pos: 0, pending: null },
   groups: [], frames: [], frame: null, engine: null, engines: new Map(),
   showDefaults: false,
   typ: null, maps: [], mapBlobs: new Map(),
@@ -119,6 +123,7 @@ function setLanguage(code) {
   buildPresets();
   buildLegend();
   refreshLegend();
+  renderHistory();
   buildRegions();
   renderCompare();
   if (state.frames.length) {
@@ -346,8 +351,9 @@ function renderCompare() {
   button.textContent = t(state.showDefaults ? 'compareOn' : 'compareOff');
 }
 
-function setColour(name, hex) {
-  if (state.palette[name] === hex) return;
+// Меняет один цвет на экране и в сохранённой палитре. История об этом ещё не знает.
+function applyColour(name, hex) {
+  if (state.palette[name] === hex) return false;
   state.palette[name] = hex;
   const wasDefaults = leaveDefaultsView();
   if (state.engine) {
@@ -357,14 +363,236 @@ function setColour(name, hex) {
   }
   refreshLegend();
   saveLocal();
+  return true;
 }
 
-function setPalette(palette) {
+function applyPalette(palette) {
   state.palette = { ...palette };
   leaveDefaultsView();
   if (state.engine) { renderFull(state.engine, state.palette); paint(); }
   refreshLegend();
   saveLocal();
+}
+
+// Цвет из палитры браузера меняется на лету; шагом истории он становится, когда выбор закончен.
+function previewColour(name, hex) {
+  if (state.history.pending && state.history.pending !== name) settle();
+  if (applyColour(name, hex)) state.history.pending = name;
+}
+
+function setColour(name, hex) {
+  settle();
+  if (applyColour(name, hex)) record('colour');
+}
+
+function setPalette(palette, kind, ref) {
+  settle();
+  applyPalette(palette);
+  record(kind, ref);
+}
+
+// ---------------------------------------------------------------- история правок
+//
+// Шаг — палитра после правки; base — палитра до первого шага; pos — сколько шагов применено.
+// Что именно изменилось в шаге, видно из сравнения с предыдущей палитрой и отдельно не хранится.
+
+const paletteAt = (pos) => (pos > 0 ? state.history.steps[pos - 1].palette : state.history.base);
+const changedNames = (before, after) => state.names.filter((name) => before[name] !== after[name]);
+
+// Записывает шагом всё, чем палитра отличается от текущего шага. Виды шага: picker (палитра браузера),
+// colour (код цвета, возврат исходного), preset (набор, ref — его id), file (набор из файла).
+function record(kind, ref) {
+  const history = state.history;
+  history.pending = null;
+  const changed = changedNames(paletteAt(history.pos), state.palette);
+  if (!changed.length) return;
+  const now = Date.now();
+  const last = history.steps[history.pos - 1];
+  // Часть браузеров шлёт change на каждое движение в палитре: быстрые правки одного цвета — один шаг.
+  const merge = kind === 'picker' && last && last.kind === 'picker' && now - last.at < MERGE_MS
+    && history.pos === history.steps.length
+    && changedNames(paletteAt(history.pos - 1), last.palette).join() === changed.join();
+  if (merge) {
+    last.palette = { ...state.palette };
+    last.at = now;
+    if (!changedNames(paletteAt(history.pos - 1), last.palette).length) { history.steps.pop(); history.pos--; }
+  } else {
+    history.steps.length = history.pos;          // правка после шагов назад отбрасывает отменённые шаги
+    history.steps.push({ palette: { ...state.palette }, kind, ref, at: now });
+    if (history.steps.length > HISTORY_LIMIT) history.base = history.steps.shift().palette;
+    history.pos = history.steps.length;
+  }
+  renderHistory();
+  saveHistory();
+}
+
+function settle() {
+  if (state.history.pending) record('picker');
+}
+
+function goTo(pos) {
+  const history = state.history;
+  const target = Math.max(0, Math.min(pos, history.steps.length));
+  if (target === history.pos) return;
+  history.pos = target;
+  applyPalette(paletteAt(target));
+  renderHistory();
+  saveHistory();
+}
+
+function stepHistory(delta) {
+  settle();
+  goTo(state.history.pos + delta);
+}
+
+// «Дорога I класса, обводка»: у вложенных строк легенды своё название ничего не говорит без парного.
+function colourTitle(name) {
+  const find = (wanted) => {
+    for (const group of state.legend) {
+      const item = group.items.find((entry) => entry.name === wanted);
+      if (item) return pick(item.title);
+    }
+    return wanted;
+  };
+  const [kind, pair] = SAMPLE[name] || [];
+  return SUB_KINDS.has(kind) && pair ? `${find(pair)}, ${find(name)}` : find(name);
+}
+
+function stepTitle(index) {
+  const step = state.history.steps[index];
+  if (step.kind === 'file') return t('historyFile');
+  if (step.kind === 'preset') {
+    const preset = state.presets.find((p) => p.id === step.ref);
+    if (preset || step.ref === 'default') return `${t('presetLabel')}: ${preset ? pick(preset.title) : t('presetDefault')}`;
+  }
+  const changed = changedNames(paletteAt(index), step.palette);
+  if (changed.length === 1) return `${colourTitle(changed[0])}: ${step.palette[changed[0]]}`;
+  return t('historySeveral', { count: changed.length });
+}
+
+// Образец шага: один цвет или до четырёх полосок, взятых равномерно из изменённых цветов (обводки — в последнюю очередь).
+function stepColours(index) {
+  const step = state.history.steps[index];
+  const changed = changedNames(paletteAt(index), step.palette);
+  const main = changed.filter((name) => !SUB_KINDS.has((SAMPLE[name] || [])[0]));
+  const names = main.length ? main : changed;
+  const count = Math.min(4, names.length);
+  return Array.from({ length: count }, (unused, i) => step.palette[names[Math.floor(i * names.length / count)]]);
+}
+
+function renderHistory() {
+  const { steps, pos } = state.history;
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  const back = $('#history-back');
+  const forward = $('#history-forward');
+  back.setAttribute('aria-disabled', String(pos === 0));
+  forward.setAttribute('aria-disabled', String(pos === steps.length));
+  back.title = `${t('historyBack')} (${mac ? '⌘Z' : 'Ctrl+Z'})`;
+  forward.title = `${t('historyForward')} (${mac ? '⇧⌘Z' : 'Ctrl+Y'})`;
+
+  const strip = $('#history-strip');
+  while (strip.children.length > steps.length) strip.lastElementChild.remove();
+  steps.forEach((step, index) => {
+    let button = strip.children[index];
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'swatch';
+      strip.append(button);
+    }
+    const title = stepTitle(index);
+    button.title = title;
+    button.setAttribute('aria-label', title);
+    button.classList.toggle('ahead', index >= pos);
+    if (index === pos - 1) button.setAttribute('aria-current', 'step');
+    else button.removeAttribute('aria-current');
+    button.textContent = '';
+    for (const colour of stepColours(index)) {
+      const stripe = document.createElement('i');
+      stripe.style.background = colour;
+      button.append(stripe);
+    }
+  });
+
+  // Новый шаг виден справа; если текущий шаг ушёл за край, лента подвигается к нему.
+  const current = strip.children[pos - 1];
+  if (!current || pos === steps.length) {
+    strip.scrollLeft = current ? strip.scrollWidth : 0;
+  } else {
+    const margin = 12;
+    const left = current.offsetLeft - margin;
+    const right = current.offsetLeft + current.offsetWidth + margin;
+    if (left < strip.scrollLeft) strip.scrollLeft = left;
+    else if (right > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = right - strip.clientWidth;
+  }
+}
+
+// История живёт, пока открыта вкладка, и переживает обновление страницы.
+function saveHistory() {
+  const { base, steps, pos } = state.history;
+  const list = (palette) => state.names.map((name) => palette[name]);
+  try {
+    sessionStorage.setItem(HISTORY_KEY, JSON.stringify({
+      names: state.names,
+      base: list(base),
+      steps: steps.map((step) => ({ colours: list(step.palette), kind: step.kind, ref: step.ref })),
+      pos,
+    }));
+  } catch (error) { /* не страшно */ }
+}
+
+function loadHistory() {
+  const history = { base: { ...state.palette }, steps: [], pos: 0, pending: null };
+  state.history = history;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(HISTORY_KEY) || 'null');
+    if (!saved || !Array.isArray(saved.names) || saved.names.join() !== state.names.join()) return;
+    const palette = (list) => Object.fromEntries(state.names.map((name, i) => {
+      const colour = typeof list[i] === 'string' && parseColour(list[i]);
+      if (!colour) throw new Error('colour');
+      return [name, colour];
+    }));
+    const base = palette(saved.base);
+    const steps = saved.steps.map((step) => ({
+      palette: palette(step.colours),
+      kind: ['picker', 'colour', 'preset', 'file'].includes(step.kind) ? step.kind : 'colour',
+      ref: typeof step.ref === 'string' ? step.ref : undefined,
+      at: 0,
+    }));
+    const { pos } = saved;
+    if (steps.length > HISTORY_LIMIT || !Number.isInteger(pos) || pos < 0 || pos > steps.length) return;
+    Object.assign(history, { base, steps, pos });
+  } catch (error) {
+    return;                                      // запись повреждена: история начинается заново
+  }
+  // Палитра могла измениться мимо истории (правка не успела стать шагом, другая вкладка): это ещё один шаг.
+  record('colour');
+}
+
+function setupHistory() {
+  $('#history-back').addEventListener('click', () => stepHistory(-1));
+  $('#history-forward').addEventListener('click', () => stepHistory(1));
+  const strip = $('#history-strip');
+  strip.addEventListener('click', (event) => {
+    const button = event.target.closest('.swatch');
+    if (!button) return;
+    settle();
+    goTo([...strip.children].indexOf(button) + 1);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+    // В поле кода цвета работает обычная отмена ввода.
+    if (event.target instanceof Element && event.target.closest('input[type="text"], textarea')) return;
+    // Буква берётся с клавиши как она подписана (на чешской раскладке Z и Y поменяны местами),
+    // а при нелатинской раскладке — по месту клавиши.
+    const letter = /^[a-z]$/i.test(event.key) ? event.key.toLowerCase() : { KeyZ: 'z', KeyY: 'y' }[event.code];
+    const back = letter === 'z' && !event.shiftKey;
+    const forward = (letter === 'z' && event.shiftKey) || (letter === 'y' && event.ctrlKey && !event.metaKey && !event.shiftKey);
+    if (!back && !forward) return;
+    event.preventDefault();
+    stepHistory(back ? -1 : 1);
+  });
+  window.addEventListener('pagehide', settle);
 }
 
 function buildLegend() {
@@ -392,7 +620,8 @@ function buildLegend() {
       const picker = document.createElement('input');
       picker.type = 'color';
       picker.setAttribute('aria-label', t('pickColour', { group: groupTitle, item: itemTitle }));
-      picker.addEventListener('input', () => setColour(item.name, picker.value.toUpperCase()));
+      picker.addEventListener('input', () => previewColour(item.name, picker.value.toUpperCase()));
+      picker.addEventListener('change', () => { previewColour(item.name, picker.value.toUpperCase()); settle(); });
       well.append(sample, picker);
 
       const label = document.createElement('span');
@@ -447,7 +676,7 @@ function setupPresets() {
   select.addEventListener('change', () => {
     if (select.value === 'custom') return;
     const preset = state.presets.find((p) => p.id === select.value);
-    setPalette({ ...state.defaults, ...(preset ? preset.colors : {}) });
+    setPalette({ ...state.defaults, ...(preset ? preset.colors : {}) }, 'preset', preset ? preset.id : 'default');
   });
 }
 
@@ -472,7 +701,7 @@ function setupPaletteFiles() {
         if (colour) { palette[name] = colour; used++; }
       }
       if (!used) throw fail('paletteEmpty');
-      setPalette(palette);
+      setPalette(palette, 'file');
       say(message, 'paletteLoaded', { used, total: state.names.length });
     } catch (error) {
       say(message, 'paletteRejected', { error }, true);
@@ -684,11 +913,14 @@ async function start() {
     presets, groups: scenes.groups, frames: scenes.frames, typ, maps,
   });
   state.palette = loadLocal() || { ...state.defaults };
+  loadHistory();
 
   buildPresets();
   setupPresets();
   buildLegend();
   refreshLegend();
+  setupHistory();
+  renderHistory();
   setupPaletteFiles();
   setupExport();
 
