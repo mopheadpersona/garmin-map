@@ -4,6 +4,8 @@ A vector map made for riding rather than planning: at a glance it should be clea
 
 **Pick your own colours and download the map:** <https://mopheadpersona.github.io/garmin-map/>. The page recolours the map in your browser; nothing is uploaded. Czechia only for now.
 
+Why this map exists and how it started: [ABOUT.md](ABOUT.md).
+
 The style is described in `SPEC.md`, in Russian. The author's working notes (`NOTES.md`) are not part of the repository; comments in the code that mention that file refer to them.
 
 ## Build a region
