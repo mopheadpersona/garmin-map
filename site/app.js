@@ -58,7 +58,7 @@ function t(key, params = {}) {
   });
 }
 
-// Название из данных: строка или объект {en, cs, ru}.
+// Название из данных: строка или объект {en, cs}.
 const pick = (value) => (value && typeof value === 'object'
   ? value[state.language] ?? value[DEFAULT_LANGUAGE] ?? Object.values(value)[0] ?? ''
   : value ?? '');

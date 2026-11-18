@@ -101,8 +101,7 @@
    "scene": "interchange",
    "sceneTitle": {
     "en": "Interchange",
-    "cs": "Dálniční křižovatka",
-    "ru": "Развязка"
+    "cs": "Dálniční křižovatka"
    },
    "screen": "2-500m",
    "dir": "data/frames/interchange_2-500m",
@@ -116,8 +115,7 @@
    "scene": "interchange",
    "sceneTitle": {
     "en": "Interchange",
-    "cs": "Dálniční křižovatka",
-    "ru": "Развязка"
+    "cs": "Dálniční křižovatka"
    },
    "screen": "3-150m",
    "dir": "data/frames/interchange_3-150m",
@@ -131,8 +129,7 @@
    "scene": "center",
    "sceneTitle": {
     "en": "City",
-    "cs": "Město",
-    "ru": "Город"
+    "cs": "Město"
    },
    "screen": "2-500m",
    "dir": "data/frames/center_2-500m",
@@ -146,8 +143,7 @@
    "scene": "center",
    "sceneTitle": {
     "en": "City",
-    "cs": "Město",
-    "ru": "Город"
+    "cs": "Město"
    },
    "screen": "3-150m",
    "dir": "data/frames/center_3-150m",
@@ -161,8 +157,7 @@
    "scene": "brdy-forest",
    "sceneTitle": {
     "en": "Forest",
-    "cs": "Les",
-    "ru": "Лес"
+    "cs": "Les"
    },
    "screen": "2-500m",
    "dir": "data/frames/brdy-forest_2-500m",
@@ -176,8 +171,7 @@
    "scene": "brdy-forest",
    "sceneTitle": {
     "en": "Forest",
-    "cs": "Les",
-    "ru": "Лес"
+    "cs": "Les"
    },
    "screen": "3-150m",
    "dir": "data/frames/brdy-forest_3-150m",
@@ -191,8 +185,7 @@
    "scene": "outskirts",
    "sceneTitle": {
     "en": "Outskirts",
-    "cs": "Okraj města",
-    "ru": "Окраина"
+    "cs": "Okraj města"
    },
    "screen": "2-500m",
    "dir": "data/frames/outskirts_2-500m",
@@ -206,8 +199,7 @@
    "scene": "outskirts",
    "sceneTitle": {
     "en": "Outskirts",
-    "cs": "Okraj města",
-    "ru": "Окраина"
+    "cs": "Okraj města"
    },
    "screen": "3-150m",
    "dir": "data/frames/outskirts_3-150m",

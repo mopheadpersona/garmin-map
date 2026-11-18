@@ -77,104 +77,91 @@
   {
    "title": {
     "en": "Roads",
-    "cs": "Silnice",
-    "ru": "Дороги"
+    "cs": "Silnice"
    },
    "items": [
     {
      "name": "GREEN",
      "title": {
       "en": "Motorway, cycling banned",
-      "cs": "Dálnice, zákaz vjezdu cyklistů",
-      "ru": "Автомагистраль, запрет"
+      "cs": "Dálnice, zákaz vjezdu cyklistů"
      }
     },
     {
      "name": "GREEN_EDGE",
      "title": {
       "en": "casing",
-      "cs": "obrys",
-      "ru": "обводка"
+      "cs": "obrys"
      }
     },
     {
      "name": "PRIMARY",
      "title": {
       "en": "Primary road",
-      "cs": "Silnice I. třídy",
-      "ru": "Дорога I класса"
+      "cs": "Silnice I. třídy"
      }
     },
     {
      "name": "PRIMARY_EDGE",
      "title": {
       "en": "casing",
-      "cs": "obrys",
-      "ru": "обводка"
+      "cs": "obrys"
      }
     },
     {
      "name": "SECONDARY",
      "title": {
       "en": "Secondary road",
-      "cs": "Silnice II. třídy",
-      "ru": "Дорога II класса"
+      "cs": "Silnice II. třídy"
      }
     },
     {
      "name": "SECONDARY_EDGE",
      "title": {
       "en": "casing",
-      "cs": "obrys",
-      "ru": "обводка"
+      "cs": "obrys"
      }
     },
     {
      "name": "WHITE",
      "title": {
       "en": "Streets and tertiary roads",
-      "cs": "Ulice a silnice III. třídy",
-      "ru": "Улицы и III класс"
+      "cs": "Ulice a silnice III. třídy"
      }
     },
     {
      "name": "WHITE_EDGE",
      "title": {
       "en": "casing",
-      "cs": "obrys",
-      "ru": "обводка"
+      "cs": "obrys"
      }
     },
     {
      "name": "PEDESTRIAN",
      "title": {
       "en": "Pedestrian zone",
-      "cs": "Pěší zóna",
-      "ru": "Пешеходная зона"
+      "cs": "Pěší zóna"
      }
     },
     {
      "name": "PEDESTRIAN_EDGE",
      "title": {
       "en": "casing",
-      "cs": "obrys",
-      "ru": "обводка"
+      "cs": "obrys"
      }
     },
     {
      "name": "NO_ENTRY",
      "title": {
       "en": "No entry, dots",
-      "cs": "Zákaz vjezdu, tečky",
-      "ru": "Проезд запрещён, точки"
+      "cs": "Zákaz vjezdu, tečky"
      }
     },
     {
      "name": "RAIL",
      "title": {
       "en": "Railway, bridge edges",
-      "cs": "Železnice, okraje mostů",
-      "ru": "Железная дорога, бортики мостов"
+      "cs": "Železnice, okraje mostů"
      }
     }
    ]
@@ -182,48 +169,42 @@
   {
    "title": {
     "en": "Gravel and trails",
-    "cs": "Nezpevněné cesty a pěšiny",
-    "ru": "Грунт и тропы"
+    "cs": "Nezpevněné cesty a pěšiny"
    },
    "items": [
     {
      "name": "GRAVEL",
      "title": {
       "en": "Gravel road, double track",
-      "cs": "Šotolina, polní cesta",
-      "ru": "Гравийка, двухколейка"
+      "cs": "Šotolina, polní cesta"
      }
     },
     {
      "name": "GRAVEL_EDGE",
      "title": {
       "en": "casing",
-      "cs": "obrys",
-      "ru": "обводка"
+      "cs": "obrys"
      }
     },
     {
      "name": "BAD_TRACK",
      "title": {
       "en": "Rough track",
-      "cs": "Rozbitá cesta",
-      "ru": "Плохой грунт"
+      "cs": "Rozbitá cesta"
      }
     },
     {
      "name": "PATH",
      "title": {
       "en": "Path, steps",
-      "cs": "Pěšina, schody",
-      "ru": "Тропа, лестница"
+      "cs": "Pěšina, schody"
      }
     },
     {
      "name": "HARD_PATH",
      "title": {
       "en": "Difficult trail, S2 and up",
-      "cs": "Náročná stezka, S2 a výše",
-      "ru": "Сложная тропа, S2 и выше"
+      "cs": "Náročná stezka, S2 a výše"
      }
     }
    ]
@@ -231,24 +212,21 @@
   {
    "title": {
     "en": "Cycle routes",
-    "cs": "Cyklotrasy",
-    "ru": "Веломаршруты"
+    "cs": "Cyklotrasy"
    },
    "items": [
     {
      "name": "CYCLE",
      "title": {
       "en": "Cycleway, cycle route",
-      "cs": "Cyklostezka, cyklotrasa",
-      "ru": "Велодорожка, веломаршрут"
+      "cs": "Cyklostezka, cyklotrasa"
      }
     },
     {
      "name": "MTB",
      "title": {
       "en": "MTB route",
-      "cs": "MTB trasa",
-      "ru": "МТБ-маршрут"
+      "cs": "MTB trasa"
      }
     }
    ]
@@ -256,96 +234,84 @@
   {
    "title": {
     "en": "Land",
-    "cs": "Krajina",
-    "ru": "Местность"
+    "cs": "Krajina"
    },
    "items": [
     {
      "name": "BG",
      "title": {
       "en": "Background",
-      "cs": "Pozadí",
-      "ru": "Фон"
+      "cs": "Pozadí"
      }
     },
     {
      "name": "BUILTUP",
      "title": {
       "en": "Built-up area",
-      "cs": "Zástavba",
-      "ru": "Застройка"
+      "cs": "Zástavba"
      }
     },
     {
      "name": "INDUSTRIAL",
      "title": {
       "en": "Industrial area, quarry",
-      "cs": "Průmyslová zóna, lom",
-      "ru": "Промзона, карьер"
+      "cs": "Průmyslová zóna, lom"
      }
     },
     {
      "name": "FOREST",
      "title": {
       "en": "Forest",
-      "cs": "Les",
-      "ru": "Лес"
+      "cs": "Les"
      }
     },
     {
      "name": "PARK",
      "title": {
       "en": "Park, garden",
-      "cs": "Park, zahrada",
-      "ru": "Парк, сад"
+      "cs": "Park, zahrada"
      }
     },
     {
      "name": "MEADOW",
      "title": {
       "en": "Meadow, grass",
-      "cs": "Louka, trávník",
-      "ru": "Луг, газон"
+      "cs": "Louka, trávník"
      }
     },
     {
      "name": "PLANTATION",
      "title": {
       "en": "Vineyard, hop garden, golf",
-      "cs": "Vinice, chmelnice, golf",
-      "ru": "Виноградник, хмельник, гольф"
+      "cs": "Vinice, chmelnice, golf"
      }
     },
     {
      "name": "PLANTATION_MARK",
      "title": {
       "en": "pattern",
-      "cs": "vzor",
-      "ru": "узор"
+      "cs": "vzor"
      }
     },
     {
      "name": "CEMETERY",
      "title": {
       "en": "Cemetery",
-      "cs": "Hřbitov",
-      "ru": "Кладбище"
+      "cs": "Hřbitov"
      }
     },
     {
      "name": "CEMETERY_CROSS",
      "title": {
       "en": "crosses",
-      "cs": "křížky",
-      "ru": "крестики"
+      "cs": "křížky"
      }
     },
     {
      "name": "CLOSED_HATCH",
      "title": {
       "en": "Restricted area",
-      "cs": "Oblast se zákazem vstupu",
-      "ru": "Закрытая территория"
+      "cs": "Oblast se zákazem vstupu"
      }
     }
    ]
@@ -353,24 +319,21 @@
   {
    "title": {
     "en": "Water",
-    "cs": "Voda",
-    "ru": "Вода"
+    "cs": "Voda"
    },
    "items": [
     {
      "name": "WATER",
      "title": {
       "en": "Water",
-      "cs": "Voda",
-      "ru": "Вода"
+      "cs": "Voda"
      }
     },
     {
      "name": "WETLAND",
      "title": {
       "en": "Wetland, intermittent stream",
-      "cs": "Mokřad, občasný potok",
-      "ru": "Болото, пересыхающий ручей"
+      "cs": "Mokřad, občasný potok"
      }
     }
    ]
@@ -378,32 +341,28 @@
   {
    "title": {
     "en": "Other",
-    "cs": "Ostatní",
-    "ru": "Прочее"
+    "cs": "Ostatní"
    },
    "items": [
     {
      "name": "FERRY",
      "title": {
       "en": "Ferry",
-      "cs": "Přívoz",
-      "ru": "Паром"
+      "cs": "Přívoz"
      }
     },
     {
      "name": "BORDER",
      "title": {
       "en": "National border",
-      "cs": "Státní hranice",
-      "ru": "Государственная граница"
+      "cs": "Státní hranice"
      }
     },
     {
      "name": "LABEL",
      "title": {
       "en": "Labels",
-      "cs": "Popisky",
-      "ru": "Подписи"
+      "cs": "Popisky"
      }
     }
    ]

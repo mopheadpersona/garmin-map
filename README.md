@@ -58,7 +58,7 @@ The page at `http://127.0.0.1:8765` shows the legend and map views that are reco
 
 The places and zoom levels of the views and the legend names are the `SCENES` and `LEGEND` tables at the top of `scripts/make_site.py`. Ready-made colour sets are in `site/data/presets.json`, edited by hand.
 
-The page comes in three languages: English (default), Czech and Russian. The choice is remembered in the browser; a link with `?lang=cs` or `?lang=ru` opens the page in that language. Interface texts are in `site/i18n.js`. Names of colours, places and maps are given in all three languages in `scripts/make_site.py` (`tr("English", "Česky", "По-русски")`), names of colour sets in `site/data/presets.json`.
+The page comes in two languages: English (default) and Czech. The choice is remembered in the browser; a link with `?lang=cs` opens the page in Czech. Interface texts are in `site/i18n.js`. Names of colours, places and maps are given in both languages in `scripts/make_site.py` (`tr("English", "Česky")`), names of colour sets in `site/data/presets.json`.
 
 “Save set to a file” gives you `palette.json`. To make those colours the default, copy them into the palette at the top of `typ/make_typ.py` and rebuild the map.
 
@@ -122,7 +122,7 @@ So far the map has been tried on one Edge 830 (16 Nov 2026): labels, navigation 
 | `typ/make_typ.py` | Tables of colours and widths; generates `style/typ.txt`. Edit here, not in `typ.txt` |
 | `typ/icons.py` | Icon drawings |
 | `scripts/` | Screenshots and viewing; `make_site.py` and `serve_site.py` are the data and the server for the colour page, `publish_site.py` publishes it to GitHub Pages |
-| `site/` | The colour page: page code, `i18n.js` (texts in three languages), `data/` (legend, views, colour slots), `maps/` (links to the maps in `out/`) |
+| `site/` | The colour page: page code, `i18n.js` (texts in two languages), `data/` (legend, views, colour slots), `maps/` (links to the maps in `out/`) |
 | `tools/` | mkgmap, splitter, an environment with osmium and Java |
 | `data/` | OSM source extracts |
 | `build/`, `out/` | Intermediate files and finished maps |

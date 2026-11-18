@@ -46,74 +46,74 @@ PREVIEW_REGION = "prague"      # кадры снимаются с малой к�
 PREVIEW_FID = 7001
 CODE_PAGE = 1252
 
-# Языки страницы: первый — язык по умолчанию. Все названия ниже задаются на трёх языках.
-LANGS = ("en", "cs", "ru")
+# Языки страницы: первый — язык по умолчанию. Все названия ниже задаются на двух языках.
+LANGS = ("en", "cs")
 
 
-def tr(en, cs, ru):
-    return {"en": en, "cs": cs, "ru": ru}
+def tr(en, cs):
+    return {"en": en, "cs": cs}
 
 
 # Карты на выгрузку: id (имя regions/<id>.conf и out/<id>.img), название на странице
 MAPS = [
-    ("czech", tr("Czechia", "Česko", "Чехия")),
-    ("prague", tr("Prague and Brdy", "Praha a Brdy", "Прага и Брды")),
+    ("czech", tr("Czechia", "Česko")),
+    ("prague", tr("Prague and Brdy", "Praha a Brdy")),
 ]
 
 # Кадры превью: id, название, широта, долгота, экраны (имена из screenshots.SCREENS)
 SCENES = [
-    ("interchange", tr("Interchange", "Dálniční křižovatka", "Развязка"), 50.1749, 14.4528, ("2-500m", "3-150m")),  # D8, съезд Здибы
-    ("center",      tr("City", "Město", "Город"),                50.0870, 14.4208, ("2-500m", "3-150m")),  # Старе-Место
-    ("brdy-forest", tr("Forest", "Les", "Лес"),                  49.7001, 13.8561, ("2-500m", "3-150m")),  # Средние Брды
-    ("outskirts",   tr("Outskirts", "Okraj města", "Окраина"),   49.9760, 14.3930, ("2-500m", "3-150m")),  # Збраслав
+    ("interchange", tr("Interchange", "Dálniční křižovatka"), 50.1749, 14.4528, ("2-500m", "3-150m")),  # D8, съезд Здибы
+    ("center",      tr("City", "Město"),                      50.0870, 14.4208, ("2-500m", "3-150m")),  # Старе-Место
+    ("brdy-forest", tr("Forest", "Les"),                      49.7001, 13.8561, ("2-500m", "3-150m")),  # Средние Брды
+    ("outskirts",   tr("Outskirts", "Okraj města"),           49.9760, 14.3930, ("2-500m", "3-150m")),  # Збраслав
 ]
 
 # Легенда страницы: группы и подписи цветов. Все имена — из make_typ.PALETTE_NAMES.
-EDGE = tr("casing", "obrys", "обводка")
+EDGE = tr("casing", "obrys")
 LEGEND = [
-    (tr("Roads", "Silnice", "Дороги"), [
-        ("GREEN", tr("Motorway, cycling banned", "Dálnice, zákaz vjezdu cyklistů", "Автомагистраль, запрет")),
+    (tr("Roads", "Silnice"), [
+        ("GREEN", tr("Motorway, cycling banned", "Dálnice, zákaz vjezdu cyklistů")),
         ("GREEN_EDGE", EDGE),
-        ("PRIMARY", tr("Primary road", "Silnice I. třídy", "Дорога I класса")), ("PRIMARY_EDGE", EDGE),
-        ("SECONDARY", tr("Secondary road", "Silnice II. třídy", "Дорога II класса")), ("SECONDARY_EDGE", EDGE),
-        ("WHITE", tr("Streets and tertiary roads", "Ulice a silnice III. třídy", "Улицы и III класс")),
+        ("PRIMARY", tr("Primary road", "Silnice I. třídy")), ("PRIMARY_EDGE", EDGE),
+        ("SECONDARY", tr("Secondary road", "Silnice II. třídy")), ("SECONDARY_EDGE", EDGE),
+        ("WHITE", tr("Streets and tertiary roads", "Ulice a silnice III. třídy")),
         ("WHITE_EDGE", EDGE),
-        ("PEDESTRIAN", tr("Pedestrian zone", "Pěší zóna", "Пешеходная зона")), ("PEDESTRIAN_EDGE", EDGE),
-        ("NO_ENTRY", tr("No entry, dots", "Zákaz vjezdu, tečky", "Проезд запрещён, точки")),
-        ("RAIL", tr("Railway, bridge edges", "Železnice, okraje mostů", "Железная дорога, бортики мостов")),
+        ("PEDESTRIAN", tr("Pedestrian zone", "Pěší zóna")), ("PEDESTRIAN_EDGE", EDGE),
+        ("NO_ENTRY", tr("No entry, dots", "Zákaz vjezdu, tečky")),
+        ("RAIL", tr("Railway, bridge edges", "Železnice, okraje mostů")),
     ]),
-    (tr("Gravel and trails", "Nezpevněné cesty a pěšiny", "Грунт и тропы"), [
-        ("GRAVEL", tr("Gravel road, double track", "Šotolina, polní cesta", "Гравийка, двухколейка")),
+    (tr("Gravel and trails", "Nezpevněné cesty a pěšiny"), [
+        ("GRAVEL", tr("Gravel road, double track", "Šotolina, polní cesta")),
         ("GRAVEL_EDGE", EDGE),
-        ("BAD_TRACK", tr("Rough track", "Rozbitá cesta", "Плохой грунт")),
-        ("PATH", tr("Path, steps", "Pěšina, schody", "Тропа, лестница")),
-        ("HARD_PATH", tr("Difficult trail, S2 and up", "Náročná stezka, S2 a výše", "Сложная тропа, S2 и выше")),
+        ("BAD_TRACK", tr("Rough track", "Rozbitá cesta")),
+        ("PATH", tr("Path, steps", "Pěšina, schody")),
+        ("HARD_PATH", tr("Difficult trail, S2 and up", "Náročná stezka, S2 a výše")),
     ]),
-    (tr("Cycle routes", "Cyklotrasy", "Веломаршруты"), [
-        ("CYCLE", tr("Cycleway, cycle route", "Cyklostezka, cyklotrasa", "Велодорожка, веломаршрут")),
-        ("MTB", tr("MTB route", "MTB trasa", "МТБ-маршрут")),
+    (tr("Cycle routes", "Cyklotrasy"), [
+        ("CYCLE", tr("Cycleway, cycle route", "Cyklostezka, cyklotrasa")),
+        ("MTB", tr("MTB route", "MTB trasa")),
     ]),
-    (tr("Land", "Krajina", "Местность"), [
-        ("BG", tr("Background", "Pozadí", "Фон")),
-        ("BUILTUP", tr("Built-up area", "Zástavba", "Застройка")),
-        ("INDUSTRIAL", tr("Industrial area, quarry", "Průmyslová zóna, lom", "Промзона, карьер")),
-        ("FOREST", tr("Forest", "Les", "Лес")),
-        ("PARK", tr("Park, garden", "Park, zahrada", "Парк, сад")),
-        ("MEADOW", tr("Meadow, grass", "Louka, trávník", "Луг, газон")),
-        ("PLANTATION", tr("Vineyard, hop garden, golf", "Vinice, chmelnice, golf", "Виноградник, хмельник, гольф")),
-        ("PLANTATION_MARK", tr("pattern", "vzor", "узор")),
-        ("CEMETERY", tr("Cemetery", "Hřbitov", "Кладбище")),
-        ("CEMETERY_CROSS", tr("crosses", "křížky", "крестики")),
-        ("CLOSED_HATCH", tr("Restricted area", "Oblast se zákazem vstupu", "Закрытая территория")),
+    (tr("Land", "Krajina"), [
+        ("BG", tr("Background", "Pozadí")),
+        ("BUILTUP", tr("Built-up area", "Zástavba")),
+        ("INDUSTRIAL", tr("Industrial area, quarry", "Průmyslová zóna, lom")),
+        ("FOREST", tr("Forest", "Les")),
+        ("PARK", tr("Park, garden", "Park, zahrada")),
+        ("MEADOW", tr("Meadow, grass", "Louka, trávník")),
+        ("PLANTATION", tr("Vineyard, hop garden, golf", "Vinice, chmelnice, golf")),
+        ("PLANTATION_MARK", tr("pattern", "vzor")),
+        ("CEMETERY", tr("Cemetery", "Hřbitov")),
+        ("CEMETERY_CROSS", tr("crosses", "křížky")),
+        ("CLOSED_HATCH", tr("Restricted area", "Oblast se zákazem vstupu")),
     ]),
-    (tr("Water", "Voda", "Вода"), [
-        ("WATER", tr("Water", "Voda", "Вода")),
-        ("WETLAND", tr("Wetland, intermittent stream", "Mokřad, občasný potok", "Болото, пересыхающий ручей")),
+    (tr("Water", "Voda"), [
+        ("WATER", tr("Water", "Voda")),
+        ("WETLAND", tr("Wetland, intermittent stream", "Mokřad, občasný potok")),
     ]),
-    (tr("Other", "Ostatní", "Прочее"), [
-        ("FERRY", tr("Ferry", "Přívoz", "Паром")),
-        ("BORDER", tr("National border", "Státní hranice", "Государственная граница")),
-        ("LABEL", tr("Labels", "Popisky", "Подписи")),
+    (tr("Other", "Ostatní"), [
+        ("FERRY", tr("Ferry", "Přívoz")),
+        ("BORDER", tr("National border", "Státní hranice")),
+        ("LABEL", tr("Labels", "Popisky")),
     ]),
 ]
 
