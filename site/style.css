@@ -65,7 +65,7 @@ h1 {
   padding: 16px 20px 40px;
 }
 
-.legend-tools { padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.legend-tools { padding-bottom: 14px; border-bottom: 1px solid var(--rule); container-type: inline-size; }
 
 .field { display: grid; gap: 4px; }
 .field > span { font-size: 14px; color: var(--muted); }
@@ -81,6 +81,37 @@ select {
 .preset-note { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
 
 .tool-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.tool-row[hidden] { display: none !important; }
+/* Четыре кнопки набора занимают строку целиком; где строка для них узка, встают два на два, а не три и одна. */
+#set-tools button { flex: 1 1 auto; padding: 0 10px; }
+@container (max-width: 349px) {
+  #set-tools { display: grid; grid-template-columns: 1fr 1fr; }
+}
+/* Кнопка «Сохранить» на готовом наборе: выглядит выключенной, но по нажатию объясняет почему. */
+.tool-row button[aria-disabled="true"] { border-color: var(--rule); color: #7A8286; cursor: default; }
+.tool-row button[aria-disabled="true"]:hover { background: transparent; }
+
+/* Строка кнопок на время превращается в поле: имя набора или ссылка. */
+#set-form { flex-wrap: nowrap; }
+#set-name {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: #fff;
+}
+#set-name.invalid { border-color: #9B1C1C; }
+button.icon { flex: none; width: 36px; padding: 0; display: grid; place-items: center; }
+button.icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
 
 button {
   height: 36px;

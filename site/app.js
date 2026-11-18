@@ -31,11 +31,18 @@ const LANGUAGE_KEY = 'garmin-map-language-v1';
 const HISTORY_KEY = 'garmin-map-history-v1';
 const HISTORY_LIMIT = 50;
 const MERGE_MS = 600;
+const SETS_KEY = 'garmin-map-sets-v1';
+const LINK_KEY = 'garmin-map-link-v1';            // цвета из последней открытой ссылки
+const SETS_LIMIT = 100;
+const NAME_LIMIT = 40;
+const OWN_PREFIX = 'own:';                        // значение пункта списка для своего набора
+const LINK_PARAM = 'c';
 const DEFAULT_LANGUAGE = LANGUAGES[0][0];
 
 const state = {
   names: [], defaults: {}, legend: [], presets: [],
   palette: {},
+  sets: [], lastSet: '', form: null,
   history: { base: {}, steps: [], pos: 0, pending: null },
   groups: [], frames: [], frame: null, engine: null, engines: new Map(),
   showDefaults: false,
@@ -88,6 +95,7 @@ function applyStaticTexts() {
   document.title = t('pageTitle');
   for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
   for (const node of document.querySelectorAll('[data-i18n-label]')) node.setAttribute('aria-label', t(node.dataset.i18nLabel));
+  for (const node of document.querySelectorAll('[data-i18n-title]')) node.title = t(node.dataset.i18nTitle);
   for (const button of document.querySelectorAll('#languages button')) {
     button.setAttribute('aria-pressed', String(button.lang === state.language));
   }
@@ -327,15 +335,7 @@ function refreshLegend() {
     if (document.activeElement !== hex) { hex.value = state.palette[name]; hex.classList.remove('invalid'); }
     row.querySelector('input[type="color"]').value = state.palette[name].toLowerCase();
   }
-  const select = $('#preset');
-  const match = [{ id: 'default', colors: {} }, ...state.presets]
-    .find((preset) => samePalette({ ...state.defaults, ...preset.colors }, state.palette));
-  select.querySelector('[value="custom"]').hidden = Boolean(match);
-  select.value = match ? match.id : 'custom';
-  const note = $('#preset-note');
-  const preset = match && state.presets.find((p) => p.id === match.id);
-  note.textContent = preset ? pick(preset.note) : '';
-  note.hidden = !note.textContent;
+  renderSetTools();
 }
 
 function leaveDefaultsView() {
@@ -400,7 +400,8 @@ const paletteAt = (pos) => (pos > 0 ? state.history.steps[pos - 1].palette : sta
 const changedNames = (before, after) => state.names.filter((name) => before[name] !== after[name]);
 
 // Записывает шагом всё, чем палитра отличается от текущего шага. Виды шага: picker (палитра браузера),
-// colour (код цвета, возврат исходного), preset (набор, ref — его id), file (набор из файла).
+// colour (код цвета, возврат исходного), preset (готовый набор, ref — его id), set (свой набор, ref — его имя),
+// file (набор из файла), link (набор из ссылки).
 function record(kind, ref) {
   const history = state.history;
   history.pending = null;
@@ -461,6 +462,8 @@ function colourTitle(name) {
 function stepTitle(index) {
   const step = state.history.steps[index];
   if (step.kind === 'file') return t('historyFile');
+  if (step.kind === 'link') return t('historyLink');
+  if (step.kind === 'set' && step.ref) return `${t('presetLabel')}: ${step.ref}`;
   if (step.kind === 'preset') {
     const preset = state.presets.find((p) => p.id === step.ref);
     if (preset || step.ref === 'default') return `${t('presetLabel')}: ${preset ? pick(preset.title) : t('presetDefault')}`;
@@ -555,8 +558,8 @@ function loadHistory() {
     const base = palette(saved.base);
     const steps = saved.steps.map((step) => ({
       palette: palette(step.colours),
-      kind: ['picker', 'colour', 'preset', 'file'].includes(step.kind) ? step.kind : 'colour',
-      ref: typeof step.ref === 'string' ? step.ref : undefined,
+      kind: ['picker', 'colour', 'preset', 'set', 'file', 'link'].includes(step.kind) ? step.kind : 'colour',
+      ref: cleanName(step.ref) || undefined,
       at: 0,
     }));
     const { pos } = saved;
@@ -657,27 +660,323 @@ function buildLegend() {
   }
 }
 
+// Список наборов: исходный, готовые и группа своих. Пункт «свой, не сохранён» добавляет renderSetTools, когда он нужен.
 function buildPresets() {
   const select = $('#preset');
   select.textContent = '';
-  const add = (value, title) => {
+  const add = (parent, value, title) => {
     const option = document.createElement('option');
     option.value = value; option.textContent = title;
-    select.append(option);
-    return option;
+    parent.append(option);
   };
-  add('default', t('presetDefault'));
-  for (const preset of state.presets) add(preset.id, pick(preset.title));
-  add('custom', t('presetCustom')).hidden = true;
+  add(select, 'default', t('presetDefault'));
+  for (const preset of state.presets) add(select, preset.id, pick(preset.title));
+  if (!state.sets.length) return;
+  const group = document.createElement('optgroup');
+  group.label = t('ownSets');
+  for (const set of state.sets) add(group, OWN_PREFIX + set.name, set.name);
+  select.append(group);
 }
 
 function setupPresets() {
   const select = $('#preset');
   select.addEventListener('change', () => {
-    if (select.value === 'custom') return;
-    const preset = state.presets.find((p) => p.id === select.value);
+    const value = select.value;
+    if (value === 'custom') return;
+    say($('#palette-message'), null);
+    if (value.startsWith(OWN_PREFIX)) {
+      const set = state.sets.find((item) => item.name === value.slice(OWN_PREFIX.length));
+      if (set) setPalette(set.palette, 'set', set.name);
+      return;
+    }
+    const preset = state.presets.find((p) => p.id === value);
+    state.lastSet = '';
     setPalette({ ...state.defaults, ...(preset ? preset.colors : {}) }, 'preset', preset ? preset.id : 'default');
   });
+}
+
+// ---------------------------------------------------------------- свои наборы и ссылка
+//
+// Свои наборы лежат в localStorage целыми палитрами. Ссылка несёт набор после «#», поэтому на сервер он не уходит:
+// #c=ИМЯ-RRGGBB.ИМЯ-RRGGBB, только цвета, которые отличаются от исходных.
+// Данные из хранилища и из ссылки чужие: берутся известные имена цветов и значения вида #RRGGBB, остальное отбрасывается.
+
+function cleanName(value) {
+  if (typeof value !== 'string') return '';
+  const text = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').replace(/\s+/g, ' ').trim();
+  return [...text].slice(0, NAME_LIMIT).join('').trim();
+}
+
+function cleanPalette(colours) {
+  if (!colours || typeof colours !== 'object') return null;
+  const palette = { ...state.defaults };
+  let used = 0;
+  for (const name of state.names) {
+    const value = colours[name];
+    if (typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)) { palette[name] = value.toUpperCase(); used++; }
+  }
+  return used ? palette : null;
+}
+
+function loadSets() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETS_KEY) || 'null');
+    if (!Array.isArray(saved)) return [];
+    const sets = [];
+    for (const item of saved) {
+      if (sets.length >= SETS_LIMIT) break;
+      const name = cleanName(item && item.name);
+      const palette = cleanPalette(item && item.colors);
+      if (name && palette && !sets.some((set) => set.name === name)) sets.push({ name, palette });
+    }
+    return sets;
+  } catch (error) {
+    return [];
+  }
+}
+
+// Список меняется только вместе с записью в хранилище: набор, который не сохранился, в списке не появляется.
+function storeSets(sets) {
+  try {
+    localStorage.setItem(SETS_KEY, JSON.stringify(sets.map((set) => ({ name: set.name, colors: set.palette }))));
+  } catch (error) {
+    return false;
+  }
+  state.sets = sets;
+  buildPresets();
+  renderSetTools();
+  return true;
+}
+
+// Чему равна палитра: своему набору, готовому набору или ничему. Свой набор важнее: иначе его было бы не удалить.
+function currentSet() {
+  const own = state.sets.find((set) => samePalette(set.palette, state.palette));
+  if (own) return { own };
+  const preset = [{ id: 'default', colors: {} }, ...state.presets]
+    .find((item) => samePalette({ ...state.defaults, ...item.colors }, state.palette));
+  return preset ? { preset } : {};
+}
+
+function freeName(stem) {
+  const base = [...cleanName(stem)].slice(0, NAME_LIMIT - 4).join('');
+  const taken = (name) => state.sets.some((set) => set.name === name);
+  let name = base;
+  for (let n = 2; taken(name); n++) name = `${base} ${n}`;
+  return name;
+}
+
+// Список и первая кнопка следуют за палитрой: «Сохранить», пока цвета не сохранены, «Удалить» — когда это свой набор.
+function renderSetTools() {
+  const match = currentSet();
+  const { form } = state;
+  // Поле имени нужно, пока цвета не совпали с набором; поле со ссылкой — пока цвета те же, что в ссылке.
+  if (form && (form.mode === 'name' ? Boolean(match.own || match.preset) : !samePalette(form.palette, state.palette))) closeForm();
+  if (match.own) state.lastSet = match.own.name;
+
+  // Пункт добавляется и убирается, а не прячется: скрытые пункты списка часть браузеров всё равно показывает.
+  const select = $('#preset');
+  const custom = select.querySelector('option[value="custom"]');
+  if (match.own || match.preset) {
+    if (custom) custom.remove();
+  } else if (!custom) {
+    const option = document.createElement('option');
+    option.value = 'custom';
+    option.textContent = t('presetCustom');
+    select.append(option);
+  }
+  select.value = match.own ? OWN_PREFIX + match.own.name : match.preset ? match.preset.id : 'custom';
+  const note = $('#preset-note');
+  note.textContent = match.preset ? pick(match.preset.note) : '';
+  note.hidden = !note.textContent;
+
+  const save = $('#save-set');
+  save.textContent = t(match.own ? 'deleteSet' : 'saveSet');
+  save.title = match.own ? t('deleteSetTitle', { name: match.own.name }) : t(match.preset ? 'saveSetNothing' : 'saveSetTitle');
+  // Не disabled: на готовом наборе кнопка объясняет, почему сохранять нечего.
+  save.setAttribute('aria-disabled', String(Boolean(match.preset)));
+  renderForm();
+}
+
+// Строка кнопок на время превращается в поле: имя нового набора (name) или ссылка, если буфер обмена недоступен (link).
+function renderForm() {
+  const { form } = state;
+  if (!form) return;
+  const input = $('#set-name');
+  const label = t(form.mode === 'link' ? 'linkField' : 'setName');
+  input.setAttribute('aria-label', label);
+  input.placeholder = label;
+  const name = cleanName(input.value);
+  $('#set-confirm').textContent = t(state.sets.some((set) => set.name === name) ? 'replaceSet' : 'saveSet');
+}
+
+function openForm(mode, value) {
+  state.form = { mode, palette: { ...state.palette } };
+  $('#set-tools').hidden = true;
+  $('#set-form').hidden = false;
+  $('#set-confirm').hidden = mode === 'link';
+  const input = $('#set-name');
+  input.readOnly = mode === 'link';
+  if (mode === 'link') input.removeAttribute('maxlength');
+  else input.setAttribute('maxlength', NAME_LIMIT);
+  input.value = value;
+  input.classList.remove('invalid');
+  renderForm();
+  input.focus();
+  input.select();
+}
+
+function closeForm(returnFocus = false) {
+  if (!state.form) return;
+  const button = $(state.form.mode === 'link' ? '#copy-link' : '#save-set');
+  state.form = null;
+  $('#set-form').hidden = true;
+  $('#set-tools').hidden = false;
+  if (returnFocus) button.focus();
+}
+
+function linkFor(palette) {
+  const parts = state.names
+    .filter((name) => palette[name] !== state.defaults[name])
+    .map((name) => `${name}-${palette[name].slice(1)}`);
+  const url = new URL(location.href);
+  url.search = '';                                // язык страницы получатель выбирает сам
+  url.hash = `${LINK_PARAM}=${parts.join('.')}`;
+  return url.href;
+}
+
+// Набор из адреса страницы или null, если в адресе его нет. Пустое значение — исходные цвета.
+function readLink() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (!params.has(LINK_PARAM)) return null;
+  const value = params.get(LINK_PARAM).slice(0, 2000);
+  const palette = { ...state.defaults };
+  let used = 0;
+  for (const part of value.split('.')) {
+    const match = part.match(/^([A-Za-z_]+)-([0-9A-Fa-f]{6})$/);
+    const name = match && match[1].toUpperCase();
+    if (!match || !state.names.includes(name)) continue;
+    palette[name] = `#${match[2].toUpperCase()}`;
+    used++;
+  }
+  return { palette, broken: Boolean(value) && !used };
+}
+
+// Открывает набор из ссылки одним шагом истории. Свои несохранённые цвета сначала уходят в список своих наборов:
+// история живёт только до закрытия вкладки, а терять их нельзя. Если сохранить их не вышло, набор не открывается.
+// После открытия набор из адреса убирается, иначе обновление страницы открывало бы его заново поверх новых правок.
+function openLink() {
+  const link = readLink();
+  if (!link) return;
+  const message = $('#palette-message');
+  const forget = () => history.replaceState(history.state, '', location.pathname + location.search);
+  if (link.broken) {
+    forget();
+    say(message, 'linkBroken', {}, true);
+    return;
+  }
+  if (samePalette(link.palette, state.palette)) {
+    forget();
+    return;
+  }
+  settle();
+  const match = currentSet();
+  let kept = '';
+  if (!match.own && !match.preset && !fromLastLink()) {
+    kept = freeName(t('setBeforeLink'));
+    const full = state.sets.length >= SETS_LIMIT;
+    if (full || !storeSets([...state.sets, { name: kept, palette: { ...state.palette } }])) {
+      say(message, 'linkNotOpened', {}, true);     // адрес не трогаем: ссылку можно открыть ещё раз, обновив страницу
+      return;
+    }
+  }
+  state.lastSet = '';
+  setPalette(link.palette, 'link');
+  try { localStorage.setItem(LINK_KEY, JSON.stringify(link.palette)); } catch (error) { /* не страшно: следующая ссылка сохранит эти цвета в список */ }
+  forget();
+  say(message, kept ? 'linkOpenedKept' : 'linkOpened', { name: kept });
+}
+
+// Цвета, которые пришли из прошлой ссылки и с тех пор не менялись, своими не считаются: в список они не уходят,
+// иначе каждая открытая ссылка оставляла бы в нём чужой набор под именем «мои цвета».
+function fromLastLink() {
+  try {
+    const palette = cleanPalette(JSON.parse(localStorage.getItem(LINK_KEY) || 'null'));
+    return Boolean(palette && samePalette(palette, state.palette));
+  } catch (error) {
+    return false;
+  }
+}
+
+function setupSets() {
+  const message = $('#palette-message');
+  const input = $('#set-name');
+
+  $('#save-set').addEventListener('click', () => {
+    settle();
+    const match = currentSet();
+    if (match.preset) {
+      say(message, 'saveSetNothing');
+    } else if (match.own) {
+      const { name } = match.own;
+      if (storeSets(state.sets.filter((set) => set !== match.own))) say(message, 'setDeleted', { name });
+      else say(message, 'setNotSaved', {}, true);
+    } else {
+      openForm('name', state.lastSet || freeName(t('setDefaultName')));
+    }
+  });
+
+  $('#set-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!state.form || state.form.mode !== 'name') return;
+    const name = cleanName(input.value);
+    if (!name) {
+      input.classList.add('invalid');
+      input.focus();
+      return;
+    }
+    const set = { name, palette: { ...state.palette } };
+    const index = state.sets.findIndex((item) => item.name === name);
+    if (index < 0 && state.sets.length >= SETS_LIMIT) {
+      say(message, 'setsFull', {}, true);
+      return;
+    }
+    const sets = index < 0 ? [...state.sets, set] : state.sets.map((item, i) => (i === index ? set : item));
+    if (!storeSets(sets)) {
+      say(message, 'setNotSaved', {}, true);
+      return;
+    }
+    closeForm();
+    // Фокус уходит на список, где теперь стоит имя набора, а не на кнопку, ставшую «Удалить»: повторный Enter ничего не сотрёт.
+    $('#preset').focus();
+    say(message, index < 0 ? 'setSaved' : 'setReplaced', { name });
+  });
+  input.addEventListener('input', () => {
+    input.classList.remove('invalid');
+    renderForm();
+  });
+  input.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeForm(true); });
+  $('#set-cancel').addEventListener('click', () => closeForm(true));
+
+  $('#copy-link').addEventListener('click', async () => {
+    settle();
+    const url = linkFor(state.palette);
+    try {
+      await navigator.clipboard.writeText(url);
+      say(message, 'linkCopied');
+    } catch (error) {
+      openForm('link', url);                       // буфер обмена недоступен: ссылку копируют из поля
+      say(message, 'linkManual');
+    }
+  });
+
+  // Наборы, сохранённые в другой вкладке, появляются в списке сразу.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== null && event.key !== SETS_KEY) return;
+    state.sets = loadSets();
+    buildPresets();
+    renderSetTools();
+  });
+  window.addEventListener('hashchange', openLink);
 }
 
 function setupPaletteFiles() {
@@ -701,6 +1000,7 @@ function setupPaletteFiles() {
         if (colour) { palette[name] = colour; used++; }
       }
       if (!used) throw fail('paletteEmpty');
+      state.lastSet = '';
       setPalette(palette, 'file');
       say(message, 'paletteLoaded', { used, total: state.names.length });
     } catch (error) {
@@ -890,7 +1190,7 @@ async function sha256(blob) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-window.mapColours = { state, checkFrame, recolourMap, sha256, parseColour, setLanguage };
+window.mapColours = { state, checkFrame, recolourMap, sha256, parseColour, setLanguage, linkFor };
 
 // ---------------------------------------------------------------- запуск
 
@@ -913,6 +1213,7 @@ async function start() {
     presets, groups: scenes.groups, frames: scenes.frames, typ, maps,
   });
   state.palette = loadLocal() || { ...state.defaults };
+  state.sets = loadSets();
   loadHistory();
 
   buildPresets();
@@ -921,8 +1222,10 @@ async function start() {
   refreshLegend();
   setupHistory();
   renderHistory();
+  setupSets();
   setupPaletteFiles();
   setupExport();
+  try { openLink(); } catch (error) { /* набор из ссылки не открылся: страница запускается как обычно */ }
 
   $('#compare').addEventListener('click', () => {
     state.showDefaults = !state.showDefaults;

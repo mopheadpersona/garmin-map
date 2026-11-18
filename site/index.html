@@ -26,11 +26,20 @@
         <select id="preset"></select>
       </label>
       <p class="preset-note" id="preset-note" hidden></p>
-      <div class="tool-row">
-        <button type="button" id="save-palette" data-i18n="savePalette">Save set to a file</button>
-        <button type="button" id="load-palette" data-i18n="loadPalette">Load from a file</button>
+      <div class="tool-row" id="set-tools">
+        <button type="button" id="save-set" data-i18n="saveSet">Save</button>
+        <button type="button" id="copy-link" data-i18n="copyLink" data-i18n-title="copyLinkTitle">Copy link</button>
+        <button type="button" id="save-palette" data-i18n="toFile" data-i18n-label="savePalette" data-i18n-title="savePalette">To a file</button>
+        <button type="button" id="load-palette" data-i18n="fromFile" data-i18n-label="loadPalette" data-i18n-title="loadPalette">From a file</button>
         <input type="file" id="palette-file" accept="application/json,.json" hidden>
       </div>
+      <form class="tool-row" id="set-form" novalidate hidden>
+        <input type="text" id="set-name" maxlength="40" spellcheck="false" autocomplete="off">
+        <button type="submit" id="set-confirm">Save</button>
+        <button type="button" class="icon" id="set-cancel" aria-label="Cancel" data-i18n-label="cancel" data-i18n-title="cancel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+        </button>
+      </form>
       <p class="message" id="palette-message" role="status"></p>
     </div>
     <div class="history" role="group" aria-label="History of changes" data-i18n-label="history">
