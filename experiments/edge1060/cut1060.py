@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """Cut patterned lines into real dashes, one set per map level (for devices that ignore TYP line bitmaps).
 
-    python3 cut1060.py <candidates.opl> <output prefix> [normal|fine]
+    python3 cut1060.py <candidates.opl> <output prefix> [coarse|less|fine] [scale]
+
+scale: for a TYP with thicker lines (profile1060.py --bold=<scale>): dashes get longer and route
+overlays move further from the road by the same factor.
 
 Input: OPL with node locations on ways (osmium add-locations-to-ways; cat -f opl,locations_on_ways=true).
 Output: an OSM change file that
   * creates the dash pieces: ways tagged gm:lv=<resolution> and gm:ab=a|b, carrying the tags the style
     needs to classify them (so the class is still decided by style/lines, not here);
   * creates route overlays as offset dashes: gm:rt=bike|mtb, gm:far=yes for wide roads;
+  * creates the ground: squares tagged gm:ground=yes over every place that has data (and one square
+    around it). In night mode the Edge 1060 paints the map background (type 0x4b) with its own dark
+    blue whatever the TYP says; an ordinary polygon under everything takes the night colour of the TYP;
   * marks every original way that was cut with gm:cut: all (pieces replace it), 21 or 20 (pieces
-    replace it down to that resolution), twin or base (it stays as the plain band under the pieces).
+    replace it down to that resolution), twin (it stays as the plain band under the pieces).
 """
 import math
+import os
 import re
 import sys
 from xml.sax.saxutils import quoteattr
@@ -20,20 +27,29 @@ U24 = 40007863.0 / 2 ** 24                     # metres per Garmin unit at resol
 LEVELS = (24, 23, 22, 21, 20, 19, 18)
 # Which look of the style (0 = closest .. 3 = overview) a level carries, and metres per screen pixel
 # where the device shows that level. Two layouts:
-#   normal  the Edge 1060 at Map Detail Normal: it shows coarse levels early, the looks are moved down
-#   fine    the levels of the canonical style; the device has to be set to a higher Map Detail
+# Read on an Edge 1060 from the level marks (marks.py), zooms 80 / 120 / 200 / 300 / 500 m:
+#   Map Detail Less    24 23 22 22 21
+#   Map Detail Normal  24 24 23 23 22
+#   Map Detail More    24 24 24 24 23
+#   less    for Map Detail Less: the canonical levels, and level 21 carries the look of level 22
+#   fine    for Map Detail Normal: the levels of the canonical style as they are
+#   coarse  the first attempt, for a device that showed 23 at 50-80 m and 22 at 120 m: looks moved down
 LAYOUTS = {
-    "normal": ({24: 0, 23: 0, 22: 1, 21: 1, 20: 2, 19: 3, 18: 3}, {24: 0.4, 23: 0.93, 22: 2.2, 21: 3.5, 20: 7.0}),
-    "fine": ({24: 0, 23: 1, 22: 2, 21: 3, 20: 3, 19: 3, 18: 3}, {24: 0.8, 23: 2.4, 22: 5.0}),
+    "coarse": ({24: 0, 23: 0, 22: 1, 21: 1, 20: 2, 19: 3, 18: 3}, {24: 0.4, 23: 0.93, 22: 2.2, 21: 3.5, 20: 7.0}),
+    "less": ({24: 0, 23: 1, 22: 2, 21: 2, 20: 3, 19: 3, 18: 3}, {24: 0.9, 23: 1.8, 22: 3.5, 21: 7.5}),
+    "fine": ({24: 0, 23: 1, 22: 2, 21: 3, 20: 3, 19: 3, 18: 3}, {24: 1.2, 23: 3.5, 22: 7.5}),
 }
-TIER, MPP = LAYOUTS["normal"]
+TIER, MPP = LAYOUTS["fine"]
 
 
 def upto(tier):
     """Levels that carry the looks 0..tier."""
     return tuple(level for level in LEVELS if TIER[level] <= tier)
-RHYTHM = {"path": (2.4, 1.6), "track": (2.6, 1.6), "steps": (1.5, 1.5), "dot": (1.5, 2.5),
-          "rail": (2.2, 2.2), "route": (2.6, 1.6), "routedot": (1.5, 2.0)}
+# Dash and gap in lattice steps. The device rounds the ends of every piece, so a plain dash comes
+# out longer than cut by the width of the line and the gap shorter by as much: the gaps of plain
+# dashes are cut wide. Pieces laid on a band or alternating without a gap ("track", "dot", "rail") keep theirs.
+RHYTHM = {"path": (2.0, 3.2), "bad": (2.6, 3.6), "track": (2.6, 1.6), "steps": (0.6, 2.6), "dot": (1.5, 2.5),
+          "rail": (3.6, 3.6), "route": (2.2, 3.4), "routedot": (0.6, 3.0)}
 ROUTE_OFFSET_PX = {False: (8, 7, 5), True: (11, 9, 7)}     # from typ/make_typ.py ROUTES, by tier
 KEEP = ("highway", "area", "motorroad", "bicycle", "access", "footway", "surface", "tracktype", "tunnel",
         "bridge", "mtb:scale", "construction", "railway", "service", "waterway", "intermittent")
@@ -41,6 +57,7 @@ PAVED = {"asphalt", "paved", "concrete", "concrete:plates", "concrete:lanes", "p
 BIG = {"trunk", "trunk_link", "primary", "primary_link", "secondary", "secondary_link"}
 LOCAL = {"tertiary", "tertiary_link", "unclassified", "residential", "living_street", "service", "road"}
 ROAD = {"motorway", "motorway_link"} | BIG | LOCAL
+HIDE_NOACCESS = os.environ.get("EDGE1060_NOACCESS") in ("plain", "hide")   # no red dots: nothing to cut
 STAMP = "2026-11-19T00:00:00Z"
 NEW_NODE, NEW_WAY = 30_000_000_000, 3_000_000_000
 
@@ -73,7 +90,7 @@ def plan(tags):
             if hw in LOCAL and tags.get("motorroad") != "yes":
                 private = tags.get("access") in ("no", "private") and \
                     tags.get("bicycle") not in ("yes", "designated", "permissive")
-                if private or tags.get("bicycle") == "no":
+                if (private or tags.get("bicycle") == "no") and not HIDE_NOACCESS:
                     return ("dot", "ab", upto(1), "21")
             return None
         if hw == "steps":
@@ -101,7 +118,7 @@ def plan(tags):
             # twin track: the band itself stays one uncut line (gm:cut=twin), pieces carry the dashed casing
             if twin:
                 return ("track", "ab" if bridge else "a", upto(2), "twin")
-            return ("track", "ab" if bridge else "a", upto(1), "21")
+            return ("bad", "ab" if bridge else "a", upto(1), "21")
         if hw == "construction":
             if tags.get("construction") in ("footway", "path", "cycleway", "steps", "track", "pedestrian",
                                             "bridleway", "platform"):
@@ -109,11 +126,18 @@ def plan(tags):
             return ("track", "a", upto(1), "21")
         return None
     if tags.get("railway") == "rail" and tags.get("tunnel") != "yes":
-        # railway: the dark line stays uncut (gm:cut=base), pieces b are the white dashes on top
-        return ("rail", "b", upto(1) if "service" in tags else LEVELS, "base")
+        # railway: dark pieces and white cased pieces of the same width take turns. No dark line runs
+        # under them: on the device it came out over the white dashes in places
+        return ("rail", "ab", upto(1) if "service" in tags else LEVELS, "all")
     if tags.get("waterway") == "stream" and tags.get("intermittent") == "yes" and "tunnel" not in tags:
         return ("path", "a", upto(1), "all")
     return None
+
+
+def is_cycleway(tags):
+    """The way is drawn as a cycleway (class cycleway of style/lines): the route overlay beside it adds nothing."""
+    hw = tags.get("highway")
+    return hw == "cycleway" or (hw in ("path", "footway") and tags.get("bicycle") == "designated")
 
 
 def is_far(tags):
@@ -133,14 +157,15 @@ def opl_escape(text):
 
 class Out:
     """Pieces go to <dst>.nodes.opl and <dst>.ways.opl (both sorted by id), the re-tagged
-    originals to <dst>.modify.osc."""
+    originals to <dst>.modify.osc. Everything is written as it comes, nothing is kept in memory."""
 
     def __init__(self, dst):
-        self.dst = dst
         self.nodes_fh = open(dst + ".nodes.opl", "w", encoding="utf-8")
         self.ways_fh = open(dst + ".ways.opl", "w", encoding="utf-8")
+        self.osc_fh = open(dst + ".modify.osc", "w", encoding="utf-8")
+        self.osc_fh.write('<?xml version="1.0" encoding="UTF-8"?>\n<osmChange version="0.6" generator="cut1060">\n<modify>\n')
         self.node_id, self.way_id = NEW_NODE, NEW_WAY
-        self.nodes = self.ways = 0
+        self.nodes = self.ways = self.modified = 0
 
     def node(self, lon, lat):
         self.node_id += 1
@@ -156,13 +181,16 @@ class Out:
             ",".join("%s=%s" % (opl_escape(k), opl_escape(v)) for k, v in tags.items()),
             ",".join("n%d" % r for r in refs)))
 
-    def close(self, modified):
-        self.nodes_fh.close()
-        self.ways_fh.close()
-        with open(self.dst + ".modify.osc", "w", encoding="utf-8") as fh:
-            fh.write('<?xml version="1.0" encoding="UTF-8"?>\n<osmChange version="0.6" generator="cut1060">\n<modify>\n')
-            fh.write("".join(modified))
-            fh.write("</modify>\n</osmChange>\n")
+    def modify(self, oid, version, nodes, tags):
+        self.modified += 1
+        self.osc_fh.write('<way id="%d" version="%d" timestamp="%s">%s%s</way>\n' % (
+            oid, version + 1, STAMP, "".join('<nd ref="%d"/>' % nid for nid, _a, _b in nodes),
+            "".join("<tag k=%s v=%s/>" % (quoteattr(k), quoteattr(v)) for k, v in tags.items())))
+
+    def close(self):
+        self.osc_fh.write("</modify>\n</osmChange>\n")
+        for fh in (self.nodes_fh, self.ways_fh, self.osc_fh):
+            fh.close()
 
 
 TOLERANCE = 0.10            # how far (in lattice steps) a cut point may lie from the drawn line
@@ -279,46 +307,71 @@ def offset_line(pts, kx, dist):
     return res
 
 
-def main():
-    global TIER, MPP
-    src, dst = sys.argv[1], sys.argv[2]
-    TIER, MPP = LAYOUTS[sys.argv[3] if len(sys.argv) > 3 else "normal"]
-    ways, routes = {}, {"bicycle": set(), "mtb": set()}
-    lat_sum = lat_n = 0
+GROUND_STEP = 0.04          # degrees; smaller than any tile of splitter, so that no tile misses its squares
+
+
+def ground(out, cells):
+    """Squares over the cells that hold data and their neighbours."""
+    wide = {(i + di, j + dj) for i, j in cells for di in (-1, 0, 1) for dj in (-1, 0, 1)}
+    corner = {}
+
+    def node(i, j):
+        if (i, j) not in corner:
+            corner[(i, j)] = out.node(i * GROUND_STEP, j * GROUND_STEP)
+        return corner[(i, j)]
+
+    for i, j in sorted(wide):
+        refs = [node(i, j), node(i + 1, j), node(i + 1, j + 1), node(i, j + 1)]
+        out.way(refs + refs[:1], {"gm:ground": "yes"})
+    return len(wide)
+
+
+NODE_RE = re.compile(r"n(\d+)x(-?[\d.]+)y(-?[\d.]+)$")
+
+
+def read(src, kinds):
+    """Objects of the OPL file one by one: (kind, id, version, tags, text of the node or member list)."""
     with open(src, encoding="utf-8") as fh:
         for line in fh:
-            kind = line[0]
-            if kind not in "wr":
+            if line[0] not in kinds:
                 continue
             fields = line.rstrip("\n").split(" ")
-            oid = int(fields[0][1:])
-            version = int(fields[1][1:])
             tags, rest = {}, ""
             for field in fields[2:]:
                 if field.startswith("T"):
                     tags = parse_tags(field[1:])
                 elif field.startswith(("N", "M")):
                     rest = field[1:]
-            if kind == "r":
-                if tags.get("type") == "route" and tags.get("route") in routes:
-                    for member in rest.split(","):
-                        if member.startswith("w"):
-                            routes[tags["route"]].add(int(member[1:].split("@")[0]))
-                continue
-            nodes = []
-            for item in rest.split(","):
-                m = re.match(r"n(\d+)x(-?[\d.]+)y(-?[\d.]+)$", item)
-                if m:
-                    nodes.append((int(m.group(1)), float(m.group(2)), float(m.group(3))))
-            if len(nodes) < 2:
-                continue
-            ways[oid] = (version, tags, nodes)
-            lat_sum += nodes[0][2]
-            lat_n += 1
-    kx = 111320.0 * math.cos(math.radians(lat_sum / max(lat_n, 1)))
+            yield line[0], int(fields[0][1:]), int(fields[1][1:]), tags, rest
+
+
+def main():
+    global TIER, MPP
+    src, dst = sys.argv[1], sys.argv[2]
+    TIER, MPP = LAYOUTS[sys.argv[3] if len(sys.argv) > 3 else "fine"]
+    scale = float(sys.argv[4]) if len(sys.argv) > 4 else 1.0
+    # First pass: the ways of cycle and MTB routes. Relations come after the ways in the file.
+    routes = {"bicycle": set(), "mtb": set()}
+    for _kind, _oid, _version, tags, members in read(src, "r"):
+        if tags.get("type") == "route" and tags.get("route") in routes:
+            for member in members.split(","):
+                if member.startswith("w"):
+                    routes[tags["route"]].add(int(member[1:].split("@")[0]))
+    # Second pass: the ways, one at a time.
     out = Out(dst)
-    modified, stats = [], {}
-    for oid, (version, tags, nodes) in ways.items():
+    stats, read_ways, cells = {}, 0, set()
+    for _kind, oid, version, tags, refs in read(src, "w"):
+        nodes = []
+        for item in refs.split(","):
+            m = NODE_RE.match(item)
+            if m:
+                nodes.append((int(m.group(1)), float(m.group(2)), float(m.group(3))))
+        if len(nodes) < 2:
+            continue
+        read_ways += 1
+        for _id, lon, lat in nodes:
+            cells.add((math.floor(lon / GROUND_STEP), math.floor(lat / GROUND_STEP)))
+        kx = 111320.0 * math.cos(math.radians(nodes[0][2]))
         todo = plan(tags)
         if todo:
             rhythm, emit, levels, cut_tag = todo
@@ -327,26 +380,24 @@ def main():
             base = {k: tags[k] for k in KEEP if k in tags}
             for res in levels:
                 unit = U24 * 2 ** (24 - res)
-                a_len, b_len = RHYTHM[rhythm][0] * unit, RHYTHM[rhythm][1] * unit
+                a_len, b_len = RHYTHM[rhythm][0] * unit * scale, RHYTHM[rhythm][1] * unit * scale
                 piece = dict(base)
                 piece["gm:lv"] = str(res)
                 n = cut(out, pts, ids, kx, a_len, b_len, emit, piece, 0.5 * unit, 360.0 / 2 ** res)
                 stats[(rhythm, res)] = stats.get((rhythm, res), 0) + n
             all_tags = dict(tags)
             all_tags["gm:cut"] = cut_tag
-            modified.append('<way id="%d" version="%d" timestamp="%s">%s%s</way>\n' % (
-                oid, version + 1, STAMP, "".join('<nd ref="%d"/>' % nid for nid, _a, _b in nodes),
-                "".join("<tag k=%s v=%s/>" % (quoteattr(k), quoteattr(v)) for k, v in all_tags.items())))
+            out.modify(oid, version, nodes, all_tags)
         if "highway" in tags and tags.get("area") != "yes":
             for route, key, rhythm, levels, side in (("bicycle", "bike", "route", upto(2), 1),
                                                      ("mtb", "mtb", "routedot", upto(1), -1)):
-                if oid not in routes[route]:
+                if oid not in routes[route] or (key == "bike" and is_cycleway(tags)):
                     continue
                 far = is_far(tags)
                 pts = [(lon, lat) for _id, lon, lat in nodes]
                 for res in levels:
                     unit = U24 * 2 ** (24 - res)
-                    px = ROUTE_OFFSET_PX[far][TIER[res]] + 1.5
+                    px = (ROUTE_OFFSET_PX[far][TIER[res]] + 1.5) * scale
                     dist = max(px * MPP[res], (2.0 if far else 1.5) * unit)
                     line = offset_line(pts, kx, side * dist)
                     if len(line) < 2:
@@ -354,12 +405,14 @@ def main():
                     piece = {"gm:rt": key, "gm:lv": str(res)}
                     if far:
                         piece["gm:far"] = "yes"
-                    a_len, b_len = RHYTHM[rhythm][0] * unit, RHYTHM[rhythm][1] * unit
+                    a_len, b_len = RHYTHM[rhythm][0] * unit * scale, RHYTHM[rhythm][1] * unit * scale
                     n = cut(out, line, [None] * len(line), kx, a_len, b_len, "a", piece, 0.5 * unit,
                             360.0 / 2 ** res)
                     stats[(key, res)] = stats.get((key, res), 0) + n
-    out.close(modified)
-    print("ways read %d, cut %d, new ways %d, new nodes %d" % (len(ways), len(modified), out.ways, out.nodes))
+    squares = ground(out, cells)
+    out.close()
+    print("ways read %d, cut %d, new ways %d, new nodes %d, ground squares %d"
+          % (read_ways, out.modified, out.ways, out.nodes, squares))
     for key in sorted(stats):
         print("   %-9s res %d: %d" % (key[0], key[1], stats[key]))
 

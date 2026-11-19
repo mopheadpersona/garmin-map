@@ -1,33 +1,72 @@
 #!/usr/bin/env python3
 """Style and TYP for devices that ignore TYP line bitmaps and switch map levels early (Edge 1050/1060).
 
-    python3 profile1060.py <repo> <out dir> [--bold]
+    python3 profile1060.py <repo> <out dir> [--fine | --less | --coarse] [--bold[=1.5]] [--bold-far=1.25]
+                           [--dash=2] [--cycleway-wide] [--plain-noaccess | --hide-noaccess]
+                           [--night=same|<palette.json>] [--casing-layer] [--marks]
 
---bold: thicker lines and casings for the dense screen of the Edge 1050/1060.
+--fine:   the levels of the canonical style; fits Map Detail Normal on the Edge 1060 (default).
+--less:   for Map Detail Less: as --fine, and level 21 (the 500 m zoom) carries the look of level 22.
+--coarse: the first attempt: the four looks moved to coarser levels (24 -> 24, 23; 23 -> 22, 21; ...).
+--bold:   every line width and casing multiplied by the factor, for the dense screen of the
+          Edge 1050/1060 (267 ppi). Cut the pieces with the same factor (cut1060.py ... <scale>).
+--bold-far: another factor for the two far looks (canonical levels 22 and 18-21); default: as --bold.
+--dash:   the factor for plain dashes (paths, bad tracks) and route overlays; default: as --bold.
+--cycleway-wide: the cycleway line about twice as wide.
+--plain-noaccess: roads closed to bicycles (class "noaccess": red dots on white) are drawn as
+          ordinary roads of their kind, without the red.
+--hide-noaccess: such roads are not drawn at all.
+--night=same: every area and line gets its night colours written out, equal to the day colours.
+          Without them the Edge 1060 in night mode paints some areas (industrial, quarry) black.
+--night=<palette.json>: night colours from a file {"NAME": "#RRGGBB"} with the names of the palette of
+          typ/make_typ.py, e.g. night-palette.json beside this script (the dark theme).
+--casing-layer:  a road is two lines, a dark one of the full width in the lowest layer and a plain
+          fill above it, instead of one line with BorderWidth. Every casing then lies under every fill.
+--marks:  rules for the level marks (marks.py): a number on the map that tells which level is shown.
 
 Writes <out dir>/style (mkgmap style) and <out dir>/typ.txt. Two changes against the canonical style:
-  * levels: the four looks of the style move to the resolutions the device really shows
-        look "вплотную"  24      -> 24, 23        look "окрестности" 22    -> 20
-        look "крупно"    23      -> 22, 21        look "обзор"       18-21 -> 19, 18
+  * levels: with --less or --coarse the four looks of the style sit on other resolutions (see cut1060.py
+    for what the device shows at which zoom);
   * patterned lines are not TYP bitmaps: the data holds ready-cut pieces (cut1060.py, tags gm:lv and
     gm:ab) and every piece is a plain solid line; a pattern is an alternation of two solid types.
 """
 import importlib.util
+import json
 import os
 import re
 import shutil
 import sys
 
 repo, out = sys.argv[1], sys.argv[2]
-BOLD = "--bold" in sys.argv
+BOLD = next((float(a[7:]) if a.startswith("--bold=") else 1.5 for a in sys.argv
+             if a == "--bold" or a.startswith("--bold=")), 1.0)
+BOLD_FAR = next((float(a[11:]) for a in sys.argv if a.startswith("--bold-far=")), BOLD)
+DASH = next((float(a[7:]) for a in sys.argv if a.startswith("--dash=")), BOLD)
+# The Edge 1060 draws 0x10c00-0x10c07 only (build_chart4.py), so the road tunnels of the closest look,
+# 0x10c10-0x10c16, go to free places among the road types of the same look.
+MOVED = {0x10c10: 0x10d11, 0x10c12: 0x10d17, 0x10c13: 0x10d1c, 0x10c14: 0x10d1d, 0x10c15: 0x10d1e, 0x10c16: 0x10d1f}
+STEPS_WIDTH = 6                 # steps are a row of dots: a wide dash with round ends would be a blob
+CYCLEWAY_WIDE = {0: (5, 2), 1: (3, 2), 2: (3, 1)} if "--cycleway-wide" in sys.argv else {}
+HIDE_NOACCESS = "--hide-noaccess" in sys.argv
+PLAIN_NOACCESS = "--plain-noaccess" in sys.argv
+MARK_TYPE = 0x0e                # polygon type of the level marks
+GROUND_TYPE = 0x03              # polygon type of the ground squares (cut1060.py), drawn right above the background
+CASING_LAYER = "--casing-layer" in sys.argv
+if CASING_LAYER:                # the old experiment keeps its numbering
+    MOVED = {}
+# Place of each separate casing in the tunnel layer (its ranks 0x17-0x1f are free): rank of the road -> rank
+CASE_RANK = {rank: 0x17 + n for n, rank in enumerate((0x08, 0x0a, 0x0f, 0x10, 0x12, 0x13, 0x14, 0x15, 0x16))}
 spec = importlib.util.spec_from_file_location("make_typ", os.path.join(repo, "typ", "make_typ.py"))
 mt = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mt)
 
-if "--fine" in sys.argv:        # canonical levels; the device needs a higher Map Detail setting
+if "--less" in sys.argv:        # Map Detail Less: level 21 is on screen at 500 m and takes the look of 22
+    TIER = {24: 0, 23: 1, 22: 2, 21: 2, 20: 3, 19: 3, 18: 3}
+    NEW = {24: (24, 24), 23: (23, 23), 22: (21, 22), 21: (20, 20), 20: (20, 20), 19: (19, 19), 18: (18, 18)}
+elif "--coarse" not in sys.argv:    # canonical levels
     TIER = {24: 0, 23: 1, 22: 2, 21: 3, 20: 3, 19: 3, 18: 3}
     NEW = {level: (level, level) for level in TIER}
-else:                           # Map Detail Normal: the looks moved to the levels the device shows
+else:                           # --coarse: the looks moved to coarser levels
     TIER = {24: 0, 23: 0, 22: 1, 21: 1, 20: 2, 19: 3, 18: 3}
     NEW = {24: (23, 24), 23: (21, 22), 22: (20, 20), 21: (19, 19), 20: (19, 19), 19: (18, 18), 18: (18, 18)}
 B_TWIN, B_NOENTRY, B_RAIL = 0x19, 0x1A, 0x1B
@@ -53,67 +92,171 @@ def decode(type_id):
     return (byte - FIRST) // 4, (byte - FIRST) % 4, rank
 
 
+def separate_casing(type_id):
+    """Is the casing of this road type drawn as a line of its own (--casing-layer)?"""
+    tier, layer, rank = decode(type_id)
+    if not CASING_LAYER or tier is None or layer != BASE or rank not in CASE_RANK:
+        return False
+    spec = solid_spec[rank][4 + tier]
+    return bool(spec and spec[1])
+
+
+def casing_type(type_id):
+    tier, _layer, rank = decode(type_id)
+    return T(tier, CASE_RANK[rank], UNDER)
+
+
+def w(pixels, tier=0):
+    """A width or a casing of the canonical TYP in pixels of this TYP (--bold, --bold-far)."""
+    factor = BOLD if tier in (0, 1) else BOLD_FAR
+    return max(1, int(pixels * factor + 0.5)) if pixels else 0
+
+
+def wd(pixels, tier=0):
+    """Width of a plain dash or of a route overlay (--dash)."""
+    factor = DASH if tier in (0, 1) else DASH * BOLD_FAR / BOLD
+    return max(1, int(pixels * factor + 0.5)) if pixels else 0
+
+
 def collect():
     lines = []
     for type_id, kind, name, params, label in original():
+        tier, layer, rank = decode(type_id)
         if kind != "bitmap":
-            lines.append((type_id, kind, name, params, label))
+            fill, edge, width, border = params
+            if rank == 0x18 and tier in CYCLEWAY_WIDE:          # cycleway, and the cycleway on a bridge
+                if layer == BASE:
+                    lines.append((type_id, kind, name, (fill, edge) + CYCLEWAY_WIDE[tier], label))
+                else:
+                    total = CYCLEWAY_WIDE[tier][0] + 2 * CYCLEWAY_WIDE[tier][1]
+                    lines.append((type_id, kind, name, (fill, edge, total, w(border, tier)), label))
+                continue
+            if separate_casing(type_id):
+                lines.append((casing_type(type_id), kind, name + " (обводка)",
+                              (edge, None, w(width, tier) + 2 * w(border, tier), 0), None))
+                border = 0
+            lines.append((type_id, kind, name, (fill, edge if border else None, w(width, tier), w(border, tier)), label))
             continue
         rows, colour1, colour2 = params
         height = len(rows)
-        tier, layer, rank = decode(type_id)
         a, b = None, None
         if tier is None:                                    # ferry, state border: stay continuous
-            a = (colour1, None, 2 if rank == 0 else 3, 0)
+            a = (colour1, None, w(2 if rank == 0 else 3, tier), 0)
         elif layer == UNDER:                                # road tunnel: paler road, dashed casing
             _r, _n, fill, edge, *per_tier = solid_spec[rank]
-            width, border = per_tier[tier]
+            width, border = w(per_tier[tier][0], tier), w(per_tier[tier][1], tier)
             a = (mt.lighten(fill), edge, width, border)
             b = (T(tier, rank - 0x10, UNDER), (mt.lighten(fill), mt.lighten(fill), width, border))
         elif layer == BRIDGE:                               # footbridge
-            a = (mt.BG, mt.RAIL, 4, 2 if tier == 0 else 1)
+            a = (mt.BG, mt.RAIL, w(4, tier), w(2 if tier == 0 else 1, tier))
         elif layer == OVER:
-            a = (colour1, None, height if rank == 0x05 else 3, 0)   # underpass / route overlay
+            a = (colour1, None, wd(height if rank == 0x05 else 3, tier), 0)  # underpass / route overlay
         elif rank == 0x03:                                  # railway: dark, white dashes inside
-            a = (mt.RAIL, None, height, 0)
-            b = (T(tier, B_RAIL), (mt.WHITE, mt.RAIL, max(height - 2, 1), 1))
+            edge = w(1, tier)
+            a = (mt.RAIL, None, w(height, tier), 0)
+            b = (T(tier, B_RAIL), (mt.WHITE, mt.RAIL, max(w(height, tier) - 2 * edge, 1), edge))
         elif rank == 0x09:                                  # twin track: dashed casing
             edge = 2 if height > 5 else 1
-            a = (mt.GRAVEL, mt.GRAVEL_EDGE, height - 2 * edge, edge)
-            b = (T(tier, B_TWIN), (mt.GRAVEL, None, height - 2 * edge, 0))
+            a = (mt.GRAVEL, mt.GRAVEL_EDGE, w(height - 2 * edge, tier), w(edge, tier))
+            b = (T(tier, B_TWIN), (mt.GRAVEL, None, w(height - 2 * edge, tier), 0))
         elif rank == 0x0C:                                  # under construction: cased white dashes
-            a = (mt.WHITE, mt.WHITE_EDGE, height, 2 if tier == 0 else 1)
+            a = (mt.WHITE, mt.WHITE_EDGE, w(height, tier), w(2 if tier == 0 else 1, tier))
         elif rank == 0x0E:                                  # no entry: red dots in a cased white road
-            border = 2 if tier == 0 else 1
-            a = (mt.NO_ENTRY, mt.WHITE_EDGE, height, border)
-            b = (T(tier, B_NOENTRY), (mt.WHITE, mt.WHITE_EDGE, height, border))
-        else:                                               # plain dashes: paths, bad track, steps, streams
-            a = (colour1, None, height, 0)
+            border = w(2 if tier == 0 else 1, tier)
+            a = (mt.NO_ENTRY, mt.WHITE_EDGE, w(height, tier), border)
+            b = (T(tier, B_NOENTRY), (mt.WHITE, mt.WHITE_EDGE, w(height, tier), border))
+        elif rank == 0x07:                                  # steps: a row of dots
+            a = (colour1, None, STEPS_WIDTH, 0)
+        elif rank in (0x04, 0x05, 0x06):                    # plain dashes: paths, bad track
+            a = (colour1, None, wd(height, tier), 0)
+        else:                                               # intermittent stream
+            a = (colour1, None, w(height, tier), 0)
         lines.append((type_id, "solid", name, a, label))
         if b:
             lines.append((b[0], "solid", name + " (промежуток)", b[1], None))
-    if BOLD:
-        lines = [bolder(entry) for entry in lines]
-    return lines
-
-
-def bolder(entry):
-    """Thicker lines for a 267 ppi screen: a one-pixel casing there is a hairline."""
-    type_id, kind, name, params, label = entry
-    if kind != "solid":
-        return entry
-    fill, edge, width, border = params
-    tier, layer, _rank = decode(type_id)
-    close = tier in (0, 1)
-    if layer == OVER:                                       # route dashes and underpass keep their weight
-        return entry
-    width = max(1, round(width * (1.35 if close else 1.25)))
-    if border:
-        border = max(2, round(border * 1.35)) if close else border
-    return (type_id, kind, name, (fill, edge, width, border), label)
+    return [(MOVED.get(entry[0], entry[0]),) + tuple(entry[1:]) for entry in lines]
 
 
 mt.collect_lines = collect
+NIGHT = next((a[8:] for a in sys.argv if a.startswith("--night=")), "")
+NIGHT_OF, NIGHT_MISSING = {}, set()          # day colour -> night colour; day colours with no night one
+
+
+def mix(colour, other, share):
+    a = [int(colour[i:i + 2], 16) for i in (1, 3, 5)]
+    b = [int(other[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#%02X%02X%02X" % tuple(round(x + (y - x) * share) for x, y in zip(a, b))
+
+
+if NIGHT not in ("", "same"):
+    with open(NIGHT, encoding="utf-8") as handle:
+        night_palette = json.load(handle)
+    day_palette = mt.palette()
+    unknown = sorted(set(night_palette) - set(day_palette))
+    assert not unknown, "night palette: unknown colours %s" % ", ".join(unknown)
+    for name, value in night_palette.items():
+        NIGHT_OF.setdefault(day_palette[name].upper(), value.upper())
+    for name, value in night_palette.items():     # tunnels use a lightened day colour: by night, half-way to the ground
+        NIGHT_OF.setdefault(mt.lighten(day_palette[name]).upper(),
+                            mix(value, night_palette.get("BG", "#000000"), 0.5))
+    NIGHT_OF.setdefault("#101010", night_palette.get("LABEL", "#F0F0EC").upper())     # level marks
+
+
+def night(colour):
+    """The colour of the night display for a day colour."""
+    if not NIGHT_OF:
+        return colour
+    if colour.upper() not in NIGHT_OF:
+        NIGHT_MISSING.add(colour.upper())
+        return colour
+    return NIGHT_OF[colour.upper()]
+
+
+def emit_polygon_night(out, type_id, name, colour1, colour2, pattern):
+    out += ["[_polygon]", "; %s" % name, "Type=0x%02x" % type_id]
+    if pattern is None:
+        out += ['Xpm="0 0 2 0"', '"X c %s"' % colour1, '"3 c %s"' % night(colour1)]
+    else:
+        rows = pattern()
+        assert len(rows) == 32 and all(len(r) == 32 for r in rows), name
+        out += ['Xpm="32 32 4 1"', '"X c %s"' % colour1, '". c %s"' % (colour2 or "none"),
+                '"3 c %s"' % night(colour1), '"4 c %s"' % (night(colour2) if colour2 else "none")]
+        out += ['"%s"' % r for r in rows]
+    out += ["[end]", ""]
+
+
+def emit_line_night(out, type_id, kind, name, params, label):
+    assert kind == "solid", name
+    fill, edge, width, border = params
+    out += ["[_line]", "; %s" % name, "Type=0x%05x" % type_id]
+    if label:
+        out += ["ExtendedLabels=Y", "FontStyle=%s" % label[0], "DayCustomColor=%s" % label[1],
+                "NightCustomColor=%s" % night(label[1])]
+    out.append("LineWidth=%d" % width)
+    if border:
+        out += ["BorderWidth=%d" % border, 'Xpm="0 0 4 0"', '"1 c %s"' % fill, '"2 c %s"' % edge,
+                '"3 c %s"' % night(fill), '"4 c %s"' % night(edge)]
+    else:
+        out += ['Xpm="0 0 2 0"', '"1 c %s"' % fill, '"3 c %s"' % night(fill)]
+    out += ["[end]", ""]
+
+
+def emit_point_night(out, type_id, name, font, icon):
+    out += ["[_point]", "; %s" % name, "Type=0x%04x" % type_id, "ExtendedLabels=Y", "FontStyle=%s" % font,
+            "DayCustomColor=%s" % mt.LABEL, "NightCustomColor=%s" % night(mt.LABEL)]
+    out += ['DayXpm="1 1 1 1"', '". c none"', '"."'] if icon is None else icon
+    out += ["[end]", ""]
+
+
+if NIGHT:
+    mt.emit_polygon, mt.emit_line, mt.emit_point = emit_polygon_night, emit_line_night, emit_point_night
+MARKS = "--marks" in sys.argv
+# The ground lies right above the background 0x4b; every other area moves one step up.
+mt.POLYGONS = ([entry for entry in mt.POLYGONS if entry[0] == 0x4b]
+               + [(GROUND_TYPE, "Земля (подложка под ночной режим)", 2, mt.BG, None, None)]
+               + [(entry[0], entry[1], entry[2] + 1) + tuple(entry[3:]) for entry in mt.POLYGONS if entry[0] != 0x4b])
+if MARKS:
+    mt.POLYGONS.append((MARK_TYPE, "Отметка уровня карты", 12, "#101010", None, None))
 
 # ---------------------------------------------------------------- style
 style = os.path.join(out, "style")
@@ -130,11 +273,20 @@ def remap_min(match):
 for name in ("polygons", "points"):
     text = open(os.path.join(repo, "style", name), encoding="utf-8").read()
     text = re.sub(r"resolution (\d+)(?!-)", remap_min, text)
+    if name == "polygons":
+        text += "\n# Подложка земли (cut1060.py): фон 0x4b прибор ночью красит по-своему.\n" \
+                "gm:ground=yes [0x%02x resolution 18]\n" % GROUND_TYPE
+    if MARKS and name == "polygons":
+        text += "\n# Отметки уровня (marks.py): число видно только на своём уровне карты.\n" + "".join(
+            "gm:mark=%d [0x%02x resolution %d-%d]\n" % (level, MARK_TYPE, level, level) for level in TIER)
     open(os.path.join(style, name), "w", encoding="utf-8").write(text)
 
 canon = open(os.path.join(repo, "style", "lines"), encoding="utf-8").read()
 marker = "# ---------------------------------------------------------------------------\n# 2."
 section1, rest = canon.split(marker, 1)
+if PLAIN_NOACCESS:              # the class is never given, the road falls through to its ordinary class
+    assert section1.count("{ set gm:cls=noaccess }") == 2
+    section1 = section1.replace("{ set gm:cls=noaccess }", "{ set gm:noentry=yes }")
 
 ROADS = [("gm:cls=green_wide", 0x16), ("gm:cls=green_link", 0x15), ("gm:cls=primary", 0x14),
          ("gm:cls=secondary", 0x13), ("gm:cls=tertiary", 0x12)]
@@ -178,6 +330,8 @@ def piece_rules():
                 r.append("%s & gm:br=yes & %s [0x%05x %s continue]" % (lv, cond, T(t, rank, BRIDGE), res))
         for cls, rank in SOLID_CLS:
             if has_solid(rank, t):
+                if separate_casing(T(t, rank)):
+                    r.append("%s & gm:cls=%s [0x%05x %s continue]" % (lv, cls, casing_type(T(t, rank)), res))
                 r.append("%s & gm:cls=%s [0x%05x %s]" % (lv, cls, T(t, rank), res))
         if has_bitmap(0x09, t):
             r.append("%s & gm:cls=twintrack & gm:ab=a [0x%05x %s]" % (lv, T(t, 0x09), res))
@@ -190,6 +344,7 @@ def piece_rules():
         if has_bitmap(0x0C, t):
             r.append("%s & gm:cls=construction & gm:ab=a [0x%05x %s]" % (lv, T(t, 0x0C), res))
         if has_bitmap(0x03, t):
+            r.append("%s & railway=rail & gm:ab=a [0x%05x %s]" % (lv, T(t, 0x03), res))
             r.append("%s & railway=rail & gm:ab=b [0x%05x %s]" % (lv, T(t, B_RAIL), res))
         if has_bitmap(0x02, t):
             r.append("%s & waterway=stream & intermittent=yes & gm:ab=a [0x%05x %s]" % (lv, T(t, 0x02), res))
@@ -229,6 +384,12 @@ def original_rules(text):
         guard = {0: "gm:cut!=21 & gm:cut!=twin & ", 1: "gm:cut!=21 & gm:cut!=twin & ",
                  2: "gm:cut!=twin & "}.get(tier, "")
         bracket = bracket.replace(m.group(0), new)
+        type_text = re.match(r"\[\s*(0x[0-9a-fA-F]+)", bracket).group(1)
+        if separate_casing(int(type_text, 16)):
+            under = bracket.replace(type_text, "0x%05x" % casing_type(int(type_text, 16)))
+            if "continue" not in under:
+                under = under.rstrip("]").rstrip() + " continue]"
+            out_lines.append("%sgm:lv!=* & (%s) %s" % (guard, cond, under))
         out_lines.append("%sgm:lv!=* & (%s) %s" % (guard, cond, bracket))
     return "\n".join(out_lines)
 
@@ -241,6 +402,11 @@ lines = [
     "",
     section1.rstrip(),
     "",
+] + ([
+    "# Дороги, закрытые для велосипеда, не рисуются (--hide-noaccess).",
+    "gm:cls=noaccess { set gm:cls=none }",
+    "",
+] if HIDE_NOACCESS else []) + [
     "# Куски: подписей на них нет (иначе подпись была бы на каждом штрихе).",
     "gm:lv=* { delete mkgmap:label:1 }",
     piece_rules(),
@@ -255,7 +421,13 @@ lines = [
     "",
     marker + original_rules(rest),
 ]
-open(os.path.join(style, "lines"), "w", encoding="utf-8").write("\n".join(lines) + "\n")
+text = "\n".join(lines) + "\n"
+for old, new in MOVED.items():
+    assert "0x%05x" % new not in text
+    text = text.replace("0x%05x" % old, "0x%05x" % new)
+open(os.path.join(style, "lines"), "w", encoding="utf-8").write(text)
 with open(os.path.join(out, "typ.txt"), "w", encoding="utf-8") as handle:
     handle.write(mt.build())
+if NIGHT_MISSING:
+    print("no night colour for: %s (the day colour is kept)" % ", ".join(sorted(NIGHT_MISSING)))
 print("style -> %s, typ -> %s" % (style, os.path.join(out, "typ.txt")))
