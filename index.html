@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map colours for Garmin Edge</title>
+<meta name="description" content="Pick the colours of a cycling map for Garmin Edge, preview them and download the recoloured .img. Everything happens in your browser.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sofia+Sans+Extra+Condensed:wght@600;700&family=Sofia+Sans+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1 data-i18n="heading">Map colours</h1>
+  <p class="lede" data-i18n="lede">Pick the legend colours, check them on real map views and download a Garmin Edge map in those colours.</p>
+  <nav class="languages" id="languages" aria-label="Language" data-i18n-label="languages"></nav>
+</header>
+
+<main class="bench">
+  <section class="legend" aria-label="Legend" data-i18n-label="legend">
+    <div class="legend-tools">
+      <label class="field">
+        <span data-i18n="presetLabel">Colour set</span>
+        <select id="preset"></select>
+      </label>
+      <p class="preset-note" id="preset-note" hidden></p>
+      <div class="tool-row" id="set-tools">
+        <button type="button" id="save-set" data-i18n="saveSet">Save</button>
+        <button type="button" id="copy-link" data-i18n="copyLink" data-i18n-title="copyLinkTitle">Copy link</button>
+        <button type="button" id="save-palette" data-i18n="toFile" data-i18n-label="savePalette" data-i18n-title="savePalette">To a file</button>
+        <button type="button" id="load-palette" data-i18n="fromFile" data-i18n-label="loadPalette" data-i18n-title="loadPalette">From a file</button>
+        <input type="file" id="palette-file" accept="application/json,.json" hidden>
+      </div>
+      <form class="tool-row" id="set-form" novalidate hidden>
+        <input type="text" id="set-name" maxlength="40" spellcheck="false" autocomplete="off">
+        <button type="submit" id="set-confirm">Save</button>
+        <button type="button" class="icon" id="set-cancel" aria-label="Cancel" data-i18n-label="cancel" data-i18n-title="cancel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+        </button>
+      </form>
+      <p class="message" id="palette-message" role="status"></p>
+    </div>
+    <div class="history" role="group" aria-label="History of changes" data-i18n-label="history">
+      <button type="button" class="history-arrow" id="history-back" aria-label="Step back" data-i18n-label="historyBack">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/></svg>
+      </button>
+      <button type="button" class="history-arrow" id="history-forward" aria-label="Step forward" data-i18n-label="historyForward">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l4-4-4-4"/><path d="M19 10H8a4 4 0 1 0 0 8h1"/></svg>
+      </button>
+      <div class="history-strip" id="history-strip"></div>
+    </div>
+    <div id="legend"></div>
+  </section>
+
+  <section class="stage" aria-label="Preview" data-i18n-label="preview">
+    <div class="stage-controls">
+      <div class="tabs" id="scenes" role="tablist" aria-label="Place" data-i18n-label="place"></div>
+      <div class="segmented" id="screens" role="group" aria-label="Scale" data-i18n-label="scale"></div>
+    </div>
+
+    <div class="device">
+      <div class="screen" id="screen">
+        <canvas id="view" width="960" height="1280" aria-label="Map view in the chosen colours" data-i18n-label="viewLabel"></canvas>
+        <div class="scale" id="scale" hidden><span id="scale-label"></span><i id="scale-bar"></i></div>
+        <p class="screen-status" id="frame-status" role="status">Loading the view…</p>
+      </div>
+    </div>
+
+    <div class="under-device">
+      <button type="button" id="compare" aria-pressed="false">Show original colours</button>
+      <p class="credit">
+        <span data-i18n="credit">The views are captured from the finished map, so the colours are exact. A device screen looks paler than a monitor.</span>
+        <a href="https://www.openstreetmap.org/copyright" data-i18n="osmCredit">Map data © OpenStreetMap contributors, ODbL</a>
+      </p>
+    </div>
+
+    <div class="export">
+      <h2 data-i18n="exportHeading">Download the map</h2>
+      <div class="field" id="device-field" hidden>
+        <span id="device-label" data-i18n="device">Device</span>
+        <div class="segmented" id="devices" role="group" aria-labelledby="device-label"></div>
+      </div>
+      <div class="export-row">
+        <label class="field">
+          <span data-i18n="region">Region</span>
+          <select id="region"></select>
+        </label>
+        <button type="button" class="primary" id="download" data-i18n="download">Download .img</button>
+      </div>
+      <progress id="progress" max="1" value="0" hidden></progress>
+      <p class="message" id="export-message" role="status">The file is put together in your browser; nothing is sent to a server. Copy it to the Garmin folder on the device.</p>
+    </div>
+
+    <section class="install" aria-labelledby="install-heading">
+      <h2 id="install-heading" data-i18n="installHeading">Put the map on your Edge</h2>
+      <ol>
+        <li data-i18n="installConnect">Connect the Edge to a computer with a USB cable. Windows shows it in Explorer. On a Mac, an Edge 530, 830 or 1030 appears as a disk in Finder; an Edge 540, 840, 1040, 1050 or newer needs a file transfer app such as OpenMTP.</li>
+        <li data-i18n="installCopy">Copy the downloaded .img file into the Garmin folder on the device. The file can have any name.</li>
+        <li data-i18n="installRestart">Unplug the cable and wait for the Edge to restart.</li>
+        <li data-i18n="installEnable">On the Edge, open the settings of the profile you ride with, go to Navigation, then Map, and switch the new map on in the list of maps.</li>
+        <li data-i18n="installDetail" data-device="edge1060" hidden>In the same Map settings, open Appearance and set Map Detail to Less. The map is drawn for that setting.</li>
+        <li data-i18n="installStock">Leave Garmin's own map switched on as well. This map is drawn on top; routes are still calculated by Garmin's map, because this one has no routing data.</li>
+      </ol>
+      <p class="install-note" data-i18n="installTried">Tried on an Edge 830 so far: labels, navigation and rerouting work. For other models the steps follow Garmin's manuals. If the map does not appear, switch Garmin's map off for a moment to check that the device reads the file.</p>    </section>
+  </section>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

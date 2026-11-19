@@ -1,0 +1,371 @@
+{
+ "names": [
+  "BG",
+  "FOREST",
+  "PARK",
+  "MEADOW",
+  "PLANTATION",
+  "PLANTATION_MARK",
+  "BUILTUP",
+  "INDUSTRIAL",
+  "CEMETERY",
+  "CEMETERY_CROSS",
+  "WATER",
+  "WETLAND",
+  "CLOSED_HATCH",
+  "GREEN",
+  "GREEN_EDGE",
+  "PRIMARY",
+  "PRIMARY_EDGE",
+  "SECONDARY",
+  "SECONDARY_EDGE",
+  "WHITE",
+  "WHITE_EDGE",
+  "PEDESTRIAN",
+  "PEDESTRIAN_EDGE",
+  "CYCLE",
+  "MTB",
+  "RAIL",
+  "NO_ENTRY",
+  "GRAVEL",
+  "GRAVEL_EDGE",
+  "BAD_TRACK",
+  "PATH",
+  "HARD_PATH",
+  "FERRY",
+  "BORDER",
+  "LABEL"
+ ],
+ "defaults": {
+  "BG": "#F1EFE6",
+  "FOREST": "#D3E2BF",
+  "PARK": "#C6E2A6",
+  "MEADOW": "#E4EDCB",
+  "PLANTATION": "#E0EBC8",
+  "PLANTATION_MARK": "#8FA66E",
+  "BUILTUP": "#E2D3B8",
+  "INDUSTRIAL": "#DAD7CE",
+  "CEMETERY": "#DDE6CF",
+  "CEMETERY_CROSS": "#6F7F63",
+  "WATER": "#A9C8E0",
+  "WETLAND": "#7FB2D6",
+  "CLOSED_HATCH": "#8E8B82",
+  "GREEN": "#A8D57E",
+  "GREEN_EDGE": "#4F8A3C",
+  "PRIMARY": "#F7CE84",
+  "PRIMARY_EDGE": "#8A5A14",
+  "SECONDARY": "#F8EE87",
+  "SECONDARY_EDGE": "#8C7A3A",
+  "WHITE": "#FFFFFF",
+  "WHITE_EDGE": "#8C8270",
+  "PEDESTRIAN": "#F4ECDC",
+  "PEDESTRIAN_EDGE": "#B5A88C",
+  "CYCLE": "#D238B8",
+  "MTB": "#0E8A7D",
+  "RAIL": "#33312D",
+  "NO_ENTRY": "#B3261E",
+  "GRAVEL": "#F5EBD8",
+  "GRAVEL_EDGE": "#8F7A5C",
+  "BAD_TRACK": "#5A4630",
+  "PATH": "#6B5A3C",
+  "HARD_PATH": "#A32D2D",
+  "FERRY": "#1F5FBF",
+  "BORDER": "#7A5C8E",
+  "LABEL": "#1B1B1A"
+ },
+ "legend": [
+  {
+   "title": {
+    "en": "Roads",
+    "cs": "Silnice"
+   },
+   "items": [
+    {
+     "name": "GREEN",
+     "title": {
+      "en": "Motorway, cycling banned",
+      "cs": "Dálnice, zákaz vjezdu cyklistů"
+     }
+    },
+    {
+     "name": "GREEN_EDGE",
+     "title": {
+      "en": "casing",
+      "cs": "obrys"
+     }
+    },
+    {
+     "name": "PRIMARY",
+     "title": {
+      "en": "Primary road",
+      "cs": "Silnice I. třídy"
+     }
+    },
+    {
+     "name": "PRIMARY_EDGE",
+     "title": {
+      "en": "casing",
+      "cs": "obrys"
+     }
+    },
+    {
+     "name": "SECONDARY",
+     "title": {
+      "en": "Secondary road",
+      "cs": "Silnice II. třídy"
+     }
+    },
+    {
+     "name": "SECONDARY_EDGE",
+     "title": {
+      "en": "casing",
+      "cs": "obrys"
+     }
+    },
+    {
+     "name": "WHITE",
+     "title": {
+      "en": "Streets and tertiary roads",
+      "cs": "Ulice a silnice III. třídy"
+     }
+    },
+    {
+     "name": "WHITE_EDGE",
+     "title": {
+      "en": "casing",
+      "cs": "obrys"
+     }
+    },
+    {
+     "name": "PEDESTRIAN",
+     "title": {
+      "en": "Pedestrian zone",
+      "cs": "Pěší zóna"
+     }
+    },
+    {
+     "name": "PEDESTRIAN_EDGE",
+     "title": {
+      "en": "casing",
+      "cs": "obrys"
+     }
+    },
+    {
+     "name": "NO_ENTRY",
+     "title": {
+      "en": "No entry, dots",
+      "cs": "Zákaz vjezdu, tečky"
+     }
+    },
+    {
+     "name": "RAIL",
+     "title": {
+      "en": "Railway, bridge edges",
+      "cs": "Železnice, okraje mostů"
+     }
+    }
+   ]
+  },
+  {
+   "title": {
+    "en": "Gravel and trails",
+    "cs": "Nezpevněné cesty a pěšiny"
+   },
+   "items": [
+    {
+     "name": "GRAVEL",
+     "title": {
+      "en": "Gravel road, double track",
+      "cs": "Šotolina, polní cesta"
+     }
+    },
+    {
+     "name": "GRAVEL_EDGE",
+     "title": {
+      "en": "casing",
+      "cs": "obrys"
+     }
+    },
+    {
+     "name": "BAD_TRACK",
+     "title": {
+      "en": "Rough track",
+      "cs": "Rozbitá cesta"
+     }
+    },
+    {
+     "name": "PATH",
+     "title": {
+      "en": "Path, steps",
+      "cs": "Pěšina, schody"
+     }
+    },
+    {
+     "name": "HARD_PATH",
+     "title": {
+      "en": "Difficult trail, S2 and up",
+      "cs": "Náročná stezka, S2 a výše"
+     }
+    }
+   ]
+  },
+  {
+   "title": {
+    "en": "Cycle routes",
+    "cs": "Cyklotrasy"
+   },
+   "items": [
+    {
+     "name": "CYCLE",
+     "title": {
+      "en": "Cycleway, cycle route",
+      "cs": "Cyklostezka, cyklotrasa"
+     }
+    },
+    {
+     "name": "MTB",
+     "title": {
+      "en": "MTB route",
+      "cs": "MTB trasa"
+     }
+    }
+   ]
+  },
+  {
+   "title": {
+    "en": "Land",
+    "cs": "Krajina"
+   },
+   "items": [
+    {
+     "name": "BG",
+     "title": {
+      "en": "Background",
+      "cs": "Pozadí"
+     }
+    },
+    {
+     "name": "BUILTUP",
+     "title": {
+      "en": "Built-up area",
+      "cs": "Zástavba"
+     }
+    },
+    {
+     "name": "INDUSTRIAL",
+     "title": {
+      "en": "Industrial area, quarry",
+      "cs": "Průmyslová zóna, lom"
+     }
+    },
+    {
+     "name": "FOREST",
+     "title": {
+      "en": "Forest",
+      "cs": "Les"
+     }
+    },
+    {
+     "name": "PARK",
+     "title": {
+      "en": "Park, garden",
+      "cs": "Park, zahrada"
+     }
+    },
+    {
+     "name": "MEADOW",
+     "title": {
+      "en": "Meadow, grass",
+      "cs": "Louka, trávník"
+     }
+    },
+    {
+     "name": "PLANTATION",
+     "title": {
+      "en": "Vineyard, hop garden, golf",
+      "cs": "Vinice, chmelnice, golf"
+     }
+    },
+    {
+     "name": "PLANTATION_MARK",
+     "title": {
+      "en": "pattern",
+      "cs": "vzor"
+     }
+    },
+    {
+     "name": "CEMETERY",
+     "title": {
+      "en": "Cemetery",
+      "cs": "Hřbitov"
+     }
+    },
+    {
+     "name": "CEMETERY_CROSS",
+     "title": {
+      "en": "crosses",
+      "cs": "křížky"
+     }
+    },
+    {
+     "name": "CLOSED_HATCH",
+     "title": {
+      "en": "Restricted area",
+      "cs": "Oblast se zákazem vstupu"
+     }
+    }
+   ]
+  },
+  {
+   "title": {
+    "en": "Water",
+    "cs": "Voda"
+   },
+   "items": [
+    {
+     "name": "WATER",
+     "title": {
+      "en": "Water",
+      "cs": "Voda"
+     }
+    },
+    {
+     "name": "WETLAND",
+     "title": {
+      "en": "Wetland, intermittent stream",
+      "cs": "Mokřad, občasný potok"
+     }
+    }
+   ]
+  },
+  {
+   "title": {
+    "en": "Other",
+    "cs": "Ostatní"
+   },
+   "items": [
+    {
+     "name": "FERRY",
+     "title": {
+      "en": "Ferry",
+      "cs": "Přívoz"
+     }
+    },
+    {
+     "name": "BORDER",
+     "title": {
+      "en": "National border",
+      "cs": "Státní hranice"
+     }
+    },
+    {
+     "name": "LABEL",
+     "title": {
+      "en": "Labels",
+      "cs": "Popisky"
+     }
+    }
+   ]
+  }
+ ]
+}

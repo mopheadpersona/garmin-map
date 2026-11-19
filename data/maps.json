@@ -1,0 +1,165 @@
+[
+ {
+  "id": "czech",
+  "region": "czech",
+  "device": "classic",
+  "title": {
+   "en": "Czechia",
+   "cs": "Česko"
+  },
+  "bytes": 222330880,
+  "block": 4096,
+  "typBlocks": [
+   54277,
+   54278
+  ],
+  "typSize": 7444,
+  "sha256": "6747ec23969758035e042dc086dcc0287264c2e85065fcd6e3cbe68a45dae969",
+  "parts": [
+   {
+    "file": "maps/czech-6747ec2396.00.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-6747ec2396.01.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-6747ec2396.02.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-6747ec2396.03.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-6747ec2396.04.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-6747ec2396.05.bin",
+    "bytes": 12615680
+   }
+  ]
+ },
+ {
+  "id": "prague",
+  "region": "prague",
+  "device": "classic",
+  "title": {
+   "en": "Prague and Brdy",
+   "cs": "Praha a Brdy"
+  },
+  "bytes": 23066624,
+  "block": 2048,
+  "typBlocks": [
+   11258,
+   11259,
+   11260,
+   11261
+  ],
+  "typSize": 7444,
+  "sha256": "3748de4be3aab7f1138dfde4941c15d6ac7e7f7490227f3a16f7f3eb73bfdb61",
+  "parts": [
+   {
+    "file": "maps/prague-3748de4be3.00.bin",
+    "bytes": 23066624
+   }
+  ]
+ },
+ {
+  "id": "czech-1060",
+  "region": "czech",
+  "device": "edge1060",
+  "title": {
+   "en": "Czechia",
+   "cs": "Česko"
+  },
+  "bytes": 466386944,
+  "block": 8192,
+  "typBlocks": [
+   56930
+  ],
+  "typSize": 6613,
+  "sha256": "3ad6ca93db588e62028ec663a36436eaee8a39a29c67d74c497ee7c913052d20",
+  "parts": [
+   {
+    "file": "maps/czech-1060-3ad6ca93db.00.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.01.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.02.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.03.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.04.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.05.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.06.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.07.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.08.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.09.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.10.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/czech-1060-3ad6ca93db.11.bin",
+    "bytes": 5013504
+   }
+  ]
+ },
+ {
+  "id": "prague-1060",
+  "region": "prague",
+  "device": "edge1060",
+  "title": {
+   "en": "Prague and Brdy",
+   "cs": "Praha a Brdy"
+  },
+  "bytes": 46059520,
+  "block": 2048,
+  "typBlocks": [
+   22485,
+   22486,
+   22487,
+   22488
+  ],
+  "typSize": 6613,
+  "sha256": "ddbe2a9734d32b99563747b24e64358fc8783ae1f2755d13fdc6920a494f6e69",
+  "parts": [
+   {
+    "file": "maps/prague-1060-ddbe2a9734.00.bin",
+    "bytes": 41943040
+   },
+   {
+    "file": "maps/prague-1060-ddbe2a9734.01.bin",
+    "bytes": 4116480
+   }
+  ]
+ }
+]
