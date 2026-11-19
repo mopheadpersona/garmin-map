@@ -19,7 +19,9 @@
 --night=same: every area and line gets its night colours written out, equal to the day colours.
           Without them the Edge 1060 in night mode paints some areas (industrial, quarry) black.
 --night=<palette.json>: night colours from a file {"NAME": "#RRGGBB"} with the names of the palette of
-          typ/make_typ.py, e.g. night-palette.json beside this script (the dark theme).
+          typ/make_typ.py, e.g. night-palette.json beside this script (the dark theme). A night colour
+          belongs to the name, not to the value of the day colour: day colours may change (TYP_PALETTE,
+          the colours page) or coincide, the night colours stay.
 --casing-layer:  a road is two lines, a dark one of the full width in the lowest layer and a plain
           fill above it, instead of one line with BorderWidth. Every casing then lies under every fill.
 --marks:  rules for the level marks (marks.py): a number on the map that tells which level is shown.
@@ -36,6 +38,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 
 repo, out = sys.argv[1], sys.argv[2]
 BOLD = next((float(a[7:]) if a.startswith("--bold=") else 1.5 for a in sys.argv
@@ -56,9 +59,40 @@ if CASING_LAYER:                # the old experiment keeps its numbering
     MOVED = {}
 # Place of each separate casing in the tunnel layer (its ranks 0x17-0x1f are free): rank of the road -> rank
 CASE_RANK = {rank: 0x17 + n for n, rank in enumerate((0x08, 0x0a, 0x0f, 0x10, 0x12, 0x13, 0x14, 0x15, 0x16))}
-spec = importlib.util.spec_from_file_location("make_typ", os.path.join(repo, "typ", "make_typ.py"))
-mt = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mt)
+
+
+def load_make_typ():
+    spec = importlib.util.spec_from_file_location("make_typ", os.path.join(repo, "typ", "make_typ.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# The TYP is written with name tags in place of the colours: "{BG}", and "{WHITE~}" for the lightened
+# colour of a tunnel. The tags become day colours at the very end (resolve), and a night colour is
+# looked up by the name in the tag. With the values of the day colours as keys two equal day colours
+# would share one night colour, and the colours page probes the TYP with palettes where all are equal.
+_plain = load_make_typ()
+DAY = _plain.palette()                          # name -> day colour, TYP_PALETTE applied
+TAG = re.compile(r"\{([A-Z_]+)(~?)\}")
+with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as _handle:
+    json.dump({name: "{%s}" % name for name in DAY}, _handle)
+_asked = os.environ.get("TYP_PALETTE")
+os.environ["TYP_PALETTE"] = _handle.name
+try:
+    mt = load_make_typ()
+finally:
+    os.remove(_handle.name)
+    if _asked is None:
+        del os.environ["TYP_PALETTE"]
+    else:
+        os.environ["TYP_PALETTE"] = _asked
+mt.lighten = lambda tag: "{%s~}" % TAG.fullmatch(tag).group(1)
+
+
+def resolve(text):
+    """Name tags -> day colours."""
+    return TAG.sub(lambda m: _plain.lighten(DAY[m.group(1)]) if m.group(2) else DAY[m.group(1)], text)
 
 if "--less" in sys.argv:        # Map Detail Less: level 21 is on screen at 500 m and takes the look of 22
     TIER = {24: 0, 23: 1, 22: 2, 21: 2, 20: 3, 19: 3, 18: 3}
@@ -179,7 +213,11 @@ def collect():
 
 mt.collect_lines = collect
 NIGHT = next((a[8:] for a in sys.argv if a.startswith("--night=")), "")
-NIGHT_OF, NIGHT_MISSING = {}, set()          # day colour -> night colour; day colours with no night one
+NIGHT_PALETTE, NIGHT_MISSING = {}, set()     # name -> night colour; names with no night colour
+MARK_COLOUR = "#101010"                      # level marks: not a colour of the palette
+# A white road is as white in a tunnel as outside (white cannot be lightened), and by night it keeps
+# its colour there too. The other roads fade half-way to the ground in a tunnel.
+TUNNEL_AS_ROAD = ("WHITE",)
 
 
 def mix(colour, other, share):
@@ -190,26 +228,24 @@ def mix(colour, other, share):
 
 if NIGHT not in ("", "same"):
     with open(NIGHT, encoding="utf-8") as handle:
-        night_palette = json.load(handle)
-    day_palette = mt.palette()
-    unknown = sorted(set(night_palette) - set(day_palette))
+        NIGHT_PALETTE = {name: value.upper() for name, value in json.load(handle).items()}
+    unknown = sorted(set(NIGHT_PALETTE) - set(DAY))
     assert not unknown, "night palette: unknown colours %s" % ", ".join(unknown)
-    for name, value in night_palette.items():
-        NIGHT_OF.setdefault(day_palette[name].upper(), value.upper())
-    for name, value in night_palette.items():     # tunnels use a lightened day colour: by night, half-way to the ground
-        NIGHT_OF.setdefault(mt.lighten(day_palette[name]).upper(),
-                            mix(value, night_palette.get("BG", "#000000"), 0.5))
-    NIGHT_OF.setdefault("#101010", night_palette.get("LABEL", "#F0F0EC").upper())     # level marks
 
 
 def night(colour):
-    """The colour of the night display for a day colour."""
-    if not NIGHT_OF:
+    """The colour of the night display for a day colour (a name tag)."""
+    if not NIGHT_PALETTE:                    # --night=same
         return colour
-    if colour.upper() not in NIGHT_OF:
-        NIGHT_MISSING.add(colour.upper())
+    if colour == MARK_COLOUR:
+        return NIGHT_PALETTE.get("LABEL", "#F0F0EC")
+    name, lightened = TAG.fullmatch(colour).groups()
+    if name not in NIGHT_PALETTE:
+        NIGHT_MISSING.add(name)
         return colour
-    return NIGHT_OF[colour.upper()]
+    if lightened and name not in TUNNEL_AS_ROAD:
+        return mix(NIGHT_PALETTE[name], NIGHT_PALETTE.get("BG", "#000000"), 0.5)
+    return NIGHT_PALETTE[name]
 
 
 def emit_polygon_night(out, type_id, name, colour1, colour2, pattern):
@@ -256,7 +292,7 @@ mt.POLYGONS = ([entry for entry in mt.POLYGONS if entry[0] == 0x4b]
                + [(GROUND_TYPE, "Земля (подложка под ночной режим)", 2, mt.BG, None, None)]
                + [(entry[0], entry[1], entry[2] + 1) + tuple(entry[3:]) for entry in mt.POLYGONS if entry[0] != 0x4b])
 if MARKS:
-    mt.POLYGONS.append((MARK_TYPE, "Отметка уровня карты", 12, "#101010", None, None))
+    mt.POLYGONS.append((MARK_TYPE, "Отметка уровня карты", 12, MARK_COLOUR, None, None))
 
 # ---------------------------------------------------------------- style
 style = os.path.join(out, "style")
@@ -427,7 +463,7 @@ for old, new in MOVED.items():
     text = text.replace("0x%05x" % old, "0x%05x" % new)
 open(os.path.join(style, "lines"), "w", encoding="utf-8").write(text)
 with open(os.path.join(out, "typ.txt"), "w", encoding="utf-8") as handle:
-    handle.write(mt.build())
+    handle.write(resolve(mt.build()))
 if NIGHT_MISSING:
     print("no night colour for: %s (the day colour is kept)" % ", ".join(sorted(NIGHT_MISSING)))
 print("style -> %s, typ -> %s" % (style, os.path.join(out, "typ.txt")))

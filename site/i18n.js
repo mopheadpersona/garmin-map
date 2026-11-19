@@ -1,4 +1,5 @@
 // Тексты страницы на двух языках. Первый язык в LANGUAGES — язык по умолчанию.
+// Текст с окончанием _<прибор> (id из DEVICES в app.js) заменяет общий, пока выбран этот прибор.
 // Названия цветов, мест и карт лежат в данных (scripts/make_site.py), наборов — в data/presets.json.
 
 export const LANGUAGES = [
@@ -71,9 +72,13 @@ export const STRINGS = {
     credit: 'The views are captured from the finished map, so the colours are exact. A device screen looks paler than a monitor.',
     osmCredit: 'Map data © OpenStreetMap contributors, ODbL',
     exportHeading: 'Download the map',
+    device: 'Device',
+    deviceClassic: 'Edge 530 · 830 · 1030 · 1040',
+    deviceEdge1060: 'Edge 1050 · 1060',
     region: 'Region',
     download: 'Download .img',
     exportHint: 'The file is put together in your browser; nothing is sent to a server. Copy it to the Garmin folder on the device.',
+    exportHint_edge1060: 'The file is put together in your browser; nothing is sent to a server. Copy it to the Garmin/Maps folder on the device and set Map Detail to Less.',
     mapOption: '{title}, {size} MB',
     noMaps: 'No maps to download yet: build a map and run scripts/make_site.py maps.',
     downloading: 'Downloading the map…',
@@ -90,10 +95,15 @@ export const STRINGS = {
     installHeading: 'Put the map on your Edge',
     installConnect: 'Connect the Edge to a computer with a USB cable. Windows shows it in Explorer. On a Mac, an Edge 530, 830 or 1030 appears as a disk in Finder; an Edge 540, 840, 1040, 1050 or newer needs a file transfer app such as OpenMTP.',
     installCopy: 'Copy the downloaded .img file into the Garmin folder on the device. The file can have any name.',
+    installCopy_edge1060: 'Copy the downloaded .img file into the Garmin/Maps folder on the device. The file can have any name.',
     installRestart: 'Unplug the cable and wait for the Edge to restart.',
     installEnable: 'On the Edge, open the settings of the profile you ride with, go to Navigation, then Map, and switch the new map on in the list of maps.',
+    installDetail: 'In the same Map settings, open Appearance and set Map Detail to Less. The map is drawn for that setting.',
     installStock: 'Leave Garmin\'s own map switched on as well. This map is drawn on top; routes are still calculated by Garmin\'s map, because this one has no routing data.',
-    installTried: 'Tried on an Edge 830 so far: labels, navigation and rerouting work. For other models the steps follow Garmin\'s manuals. If the map does not appear, switch Garmin\'s map off for a moment to check that the device reads the file.',  },
+    installStock_edge1060: 'Switch Garmin\'s own maps (TopoActive) off in that list while you want to see this map: on the Edge 1060 the two were not shown together. Routes are calculated by Garmin\'s map, so switch it back on for navigation.',
+    installTried: 'Tried on an Edge 830 so far: labels, navigation and rerouting work. For other models the steps follow Garmin\'s manuals. If the map does not appear, switch Garmin\'s map off for a moment to check that the device reads the file.',
+    installTried_edge1060: 'Tried on one Edge 1060 so far (firmware 5.27). The colours you pick here are the day colours; in night mode the map has its own dark palette. The Edge 550 and 850 have the same kind of screen, but nobody has tried the map on them yet.',
+  },
 
   cs: {
     pageTitle: 'Barvy mapy pro Garmin Edge',
@@ -159,9 +169,13 @@ export const STRINGS = {
     credit: 'Ukázky jsou pořízené z hotové mapy, takže barvy přesně odpovídají. Na displeji přístroje vypadají bledší než na monitoru.',
     osmCredit: 'Mapová data © přispěvatelé OpenStreetMap, ODbL',
     exportHeading: 'Stáhnout mapu',
+    device: 'Přístroj',
+    deviceClassic: 'Edge 530 · 830 · 1030 · 1040',
+    deviceEdge1060: 'Edge 1050 · 1060',
     region: 'Oblast',
     download: 'Stáhnout .img',
     exportHint: 'Soubor se sestaví ve vašem prohlížeči, na server se nic neodesílá. Zkopírujte ho do složky Garmin v přístroji.',
+    exportHint_edge1060: 'Soubor se sestaví ve vašem prohlížeči, na server se nic neodesílá. Zkopírujte ho do složky Garmin/Maps v přístroji a detail mapy (Map Detail) nastavte na Less.',
     mapOption: '{title}, {size} MB',
     noMaps: 'Zatím nejsou žádné mapy ke stažení: sestavte mapu a spusťte scripts/make_site.py maps.',
     downloading: 'Stahuji mapu…',
@@ -178,8 +192,13 @@ export const STRINGS = {
     installHeading: 'Jak nahrát mapu do přístroje Edge',
     installConnect: 'Připojte Edge k počítači USB kabelem. Ve Windows ho najdete v Průzkumníku souborů. Na Macu se Edge 530, 830 a 1030 zobrazí ve Finderu jako disk; pro Edge 540, 840, 1040, 1050 a novější potřebujete aplikaci pro přenos souborů, například OpenMTP.',
     installCopy: 'Zkopírujte stažený soubor .img do složky Garmin v přístroji. Na názvu souboru nezáleží.',
+    installCopy_edge1060: 'Zkopírujte stažený soubor .img do složky Garmin/Maps v přístroji. Na názvu souboru nezáleží.',
     installRestart: 'Odpojte kabel a počkejte, až se Edge restartuje.',
     installEnable: 'V přístroji otevřete nastavení profilu, se kterým jezdíte, vyberte Navigace, potom Mapa a v seznamu map novou mapu zapněte.',
+    installDetail: 'Ve stejném nastavení mapy otevřete Vzhled (Appearance) a detail mapy (Map Detail) nastavte na Less. Mapa je nakreslená pro toto nastavení.',
     installStock: 'Mapu od Garminu nechte také zapnutou. Nová mapa se vykreslí nad ní; trasy dál počítá mapa od Garminu, protože nová mapa data pro výpočet tras neobsahuje.',
-    installTried: 'Zatím vyzkoušeno na Edge 830: popisky, navigace i přepočet trasy fungují. U ostatních modelů vychází postup z příruček Garminu. Pokud se mapa nezobrazí, vypněte na chvíli mapu od Garminu: tak ověříte, že přístroj soubor načetl.',  },
+    installStock_edge1060: 'Mapy od Garminu (TopoActive) v tomto seznamu vypněte, dokud chcete vidět tuto mapu: na Edge 1060 se obě najednou nezobrazily. Trasy počítá mapa od Garminu, pro navigaci ji proto znovu zapněte.',
+    installTried: 'Zatím vyzkoušeno na Edge 830: popisky, navigace i přepočet trasy fungují. U ostatních modelů vychází postup z příruček Garminu. Pokud se mapa nezobrazí, vypněte na chvíli mapu od Garminu: tak ověříte, že přístroj soubor načetl.',
+    installTried_edge1060: 'Zatím vyzkoušeno na jednom Edge 1060 (firmware 5.27). Barvy, které tu vyberete, jsou denní; v nočním režimu má mapa vlastní tmavou paletu. Edge 550 a 850 mají stejný typ displeje, ale mapu na nich zatím nikdo nezkoušel.',
+  },
 };

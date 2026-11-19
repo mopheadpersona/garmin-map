@@ -1,8 +1,8 @@
 // Конфигуратор цветов карты. Данные готовит scripts/make_site.py:
 //   data/palette.json — имена, цвета по умолчанию и легенда;
 //   data/scenes.json  — перекрашиваемые кадры;
-//   data/typ.json     — где в файле карты лежит каждый цвет;
-//   data/maps.json    — карты на выгрузку;
+//   data/typ.json     — где в файле карты лежит каждый цвет; у карты для Edge 1050/1060 своя таблица, data/typ-1060.json;
+//   data/maps.json    — карты на выгрузку, у каждой указан прибор (device);
 //   data/presets.json — готовые наборы цветов (правится руками).
 // Тексты интерфейса — в i18n.js; названия из данных приходят сразу на всех языках.
 
@@ -38,6 +38,14 @@ const NAME_LIMIT = 40;
 const OWN_PREFIX = 'own:';                        // значение пункта списка для своего набора
 const LINK_PARAM = 'c';
 const DEFAULT_LANGUAGE = LANGUAGES[0][0];
+const DEVICE_KEY = 'garmin-map-device-v1';
+// Варианты карты по приборам (DEVICES в scripts/make_site.py): у каждого своя таблица цветов TYP.
+// Палитра, легенда и превью общие. Первый вариант — для карт, у которых прибор не указан.
+const DEVICES = [
+  { id: 'classic', typ: 'data/typ.json', title: 'deviceClassic' },
+  { id: 'edge1060', typ: 'data/typ-1060.json', title: 'deviceEdge1060' },
+];
+const deviceOf = (map) => map.device || DEVICES[0].id;
 
 const state = {
   names: [], defaults: {}, legend: [], presets: [],
@@ -46,7 +54,8 @@ const state = {
   history: { base: {}, steps: [], pos: 0, pending: null },
   groups: [], frames: [], frame: null, engine: null, engines: new Map(),
   showDefaults: false,
-  typ: null, maps: [], mapBlobs: new Map(),
+  typs: {}, maps: [], mapBlobs: new Map(),
+  devices: [], device: DEVICES[0].id,
   language: DEFAULT_LANGUAGE,
 };
 
@@ -56,8 +65,11 @@ const state = {
 const fail = (key, params) => Object.assign(new Error(key), { key, params });
 const explain = (error) => (error.key ? t(error.key, error.params) : error.message);
 
+// Текст для выбранного прибора (ключ с окончанием _<прибор>) важнее общего.
 function t(key, params = {}) {
-  const text = STRINGS[state.language][key] ?? STRINGS[DEFAULT_LANGUAGE][key] ?? key;
+  const own = `${key}_${state.device}`;
+  const text = [STRINGS[state.language], STRINGS[DEFAULT_LANGUAGE]]
+    .flatMap((strings) => [strings[own], strings[key]]).find((value) => value !== undefined) ?? key;
   return text.replace(/\{(\w+)\}/g, (whole, name) => {
     const value = params[name];
     if (value === undefined) return whole;
@@ -96,6 +108,7 @@ function applyStaticTexts() {
   for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
   for (const node of document.querySelectorAll('[data-i18n-label]')) node.setAttribute('aria-label', t(node.dataset.i18nLabel));
   for (const node of document.querySelectorAll('[data-i18n-title]')) node.title = t(node.dataset.i18nTitle);
+  for (const node of document.querySelectorAll('[data-device]')) node.hidden = node.dataset.device !== state.device;
   for (const button of document.querySelectorAll('#languages button')) {
     button.setAttribute('aria-pressed', String(button.lang === state.language));
   }
@@ -1093,8 +1106,8 @@ async function fetchMap(map, onProgress) {
 }
 
 async function recolourMap(map, palette, onProgress = () => {}) {
-  const { typ } = state;
-  if (map.typSize !== typ.size) throw fail('styleMismatch');
+  const typ = state.typs[deviceOf(map)];
+  if (!typ || map.typSize !== typ.size) throw fail('styleMismatch');
   const blob = await fetchMap(map, onProgress);
   const size = map.block;
   const data = new Uint8Array(map.typBlocks.length * size);
@@ -1121,26 +1134,68 @@ async function recolourMap(map, palette, onProgress = () => {}) {
   return new Blob(parts, { type: 'application/octet-stream' });
 }
 
+// Список карт выбранного прибора. Область остаётся той же, когда меняется прибор или язык.
+const regionOf = (map) => map.region || map.id;
+
 function buildRegions() {
   const select = $('#region');
-  const chosen = select.value;
+  const chosen = state.maps.find((map) => map.id === select.value);
   select.textContent = '';
-  for (const map of state.maps) {
+  for (const map of state.maps.filter((item) => deviceOf(item) === state.device)) {
     const option = document.createElement('option');
     option.value = map.id;
     option.textContent = t('mapOption', { title: pick(map.title), size: Math.round(map.bytes / 1048576) });
+    option.selected = Boolean(chosen) && regionOf(map) === regionOf(chosen);
     select.append(option);
   }
-  if (chosen) select.value = chosen;
+}
+
+// Приборы, для которых есть и карта, и таблица цветов. Выбор показывается, только когда их больше одного.
+function setupDevices() {
+  state.devices = DEVICES.filter((device) => state.typs[device.id]
+    && state.maps.some((map) => deviceOf(map) === device.id));
+  let saved = null;
+  try { saved = localStorage.getItem(DEVICE_KEY); } catch (error) { /* не страшно */ }
+  const known = (id) => state.devices.some((device) => device.id === id);
+  state.device = known(saved) ? saved : (state.devices[0] || DEVICES[0]).id;
+  const root = $('#devices');
+  root.textContent = '';
+  for (const device of state.devices) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.value = device.id;
+    button.dataset.i18n = device.title;
+    button.addEventListener('click', () => setDevice(device.id));
+    root.append(button);
+  }
+  $('#device-field').hidden = state.devices.length < 2;
+  markDevice();
+}
+
+function markDevice() {
+  for (const button of document.querySelectorAll('#devices button')) {
+    button.setAttribute('aria-pressed', String(button.value === state.device));
+  }
+  applyStaticTexts();                             // подсказки и шаги установки у приборов разные
+}
+
+function setDevice(id) {
+  if (id === state.device || !state.devices.some((device) => device.id === id)) return;
+  state.device = id;
+  try { localStorage.setItem(DEVICE_KEY, id); } catch (error) { /* не страшно */ }
+  markDevice();
+  buildRegions();
+  if (!$('#download').disabled) say($('#export-message'), 'exportHint');
 }
 
 function setupExport() {
   const select = $('#region');
+  setupDevices();
   buildRegions();
   const button = $('#download');
   const progress = $('#progress');
   const message = $('#export-message');
-  if (!state.maps.length) {
+  if (!state.devices.length) {                    // нет карт или таблиц цветов к ним
     button.disabled = true;
     say(message, 'noMaps', {}, true);
     return;
@@ -1190,7 +1245,7 @@ async function sha256(blob) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-window.mapColours = { state, checkFrame, recolourMap, sha256, parseColour, setLanguage, linkFor };
+window.mapColours = { state, checkFrame, recolourMap, sha256, parseColour, setLanguage, setDevice, linkFor };
 
 // ---------------------------------------------------------------- запуск
 
@@ -1201,16 +1256,17 @@ async function start() {
   renderCompare();
   say($('#frame-status'), 'frameLoading');
 
-  const [palette, scenes, presets, typ, maps] = await Promise.all([
+  const [palette, scenes, presets, maps, ...typs] = await Promise.all([
     getJSON('data/palette.json'),
     getJSON('data/scenes.json').catch(() => ({ groups: [], frames: [] })),
     getJSON('data/presets.json').catch(() => []),
-    getJSON('data/typ.json'),
     getJSON('data/maps.json').catch(() => []),
+    ...DEVICES.map((device) => getJSON(device.typ).catch(() => null)),
   ]);
   Object.assign(state, {
     names: palette.names, defaults: palette.defaults, legend: palette.legend,
-    presets, groups: scenes.groups, frames: scenes.frames, typ, maps,
+    presets, groups: scenes.groups, frames: scenes.frames, maps,
+    typs: Object.fromEntries(DEVICES.map((device, i) => [device.id, typs[i]])),
   });
   state.palette = loadLocal() || { ...state.defaults };
   state.sets = loadSets();

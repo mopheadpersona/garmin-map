@@ -78,6 +78,10 @@
 
     <div class="export">
       <h2 data-i18n="exportHeading">Download the map</h2>
+      <div class="field" id="device-field" hidden>
+        <span id="device-label" data-i18n="device">Device</span>
+        <div class="segmented" id="devices" role="group" aria-labelledby="device-label"></div>
+      </div>
       <div class="export-row">
         <label class="field">
           <span data-i18n="region">Region</span>
@@ -96,6 +100,7 @@
         <li data-i18n="installCopy">Copy the downloaded .img file into the Garmin folder on the device. The file can have any name.</li>
         <li data-i18n="installRestart">Unplug the cable and wait for the Edge to restart.</li>
         <li data-i18n="installEnable">On the Edge, open the settings of the profile you ride with, go to Navigation, then Map, and switch the new map on in the list of maps.</li>
+        <li data-i18n="installDetail" data-device="edge1060" hidden>In the same Map settings, open Appearance and set Map Detail to Less. The map is drawn for that setting.</li>
         <li data-i18n="installStock">Leave Garmin's own map switched on as well. This map is drawn on top; routes are still calculated by Garmin's map, because this one has no routing data.</li>
       </ol>
       <p class="install-note" data-i18n="installTried">Tried on an Edge 830 so far: labels, navigation and rerouting work. For other models the steps follow Garmin's manuals. If the map does not appear, switch Garmin's map off for a moment to check that the device reads the file.</p>    </section>

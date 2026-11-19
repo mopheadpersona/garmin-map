@@ -14,6 +14,11 @@
 из одних нулей и по разу с каждым цветом, включённым в одном канале, и смотрит, какие
 байты поменялись. Браузеру остаётся вписать новые значения в готовую карту.
 
+Приборы. Карта собирается в двух вариантах (DEVICES): обычная и для Edge 1050/1060
+(./build.sh <регион> --edge1060). TYP у них разный, поэтому таблица байтов у каждого своя:
+site/data/typ.json и site/data/typ-1060.json. Палитра, легенда и превью общие. Ночные цвета
+карты для Edge 1050/1060 от палитры страницы не зависят, и страница их не трогает.
+
 Превью. Картинка QMapShack линейно зависит от каждого цвета палитры (сглаживание — это
 смешивание в долях). Команда frames снимает кадр с чёрной палитрой (base) и кадры, где
 три цвета палитры включены по одному на канал R, G, B. Разность с base даёт для каждого
@@ -54,11 +59,19 @@ def tr(en, cs):
     return {"en": en, "cs": cs}
 
 
-# Карты на выгрузку: id (имя regions/<id>.conf и out/<id>.img), название на странице
+# Карты на выгрузку: регион (имя regions/<регион>.conf), название на странице
 MAPS = [
     ("czech", tr("Czechia", "Česko")),
     ("prague", tr("Prague and Brdy", "Praha a Brdy")),
 ]
+
+# Варианты карты по приборам: id, суффикс файлов (out/<регион><суффикс>.img, site/data/typ<суффикс>.json).
+# Какие модели к какому варианту относятся, написано в текстах страницы (site/i18n.js).
+DEVICES = [
+    ("classic", ""),            # Edge 530, 830, 1030, 1040: обычная сборка
+    ("edge1060", "-1060"),      # Edge 1050, 1060: ./build.sh <регион> --edge1060
+]
+EDGE1060_BUILD = os.path.join(ROOT, "experiments", "edge1060", "build.sh")
 
 # Кадры превью: id, название, широта, долгота, экраны (имена из screenshots.SCREENS)
 SCENES = [
@@ -154,9 +167,30 @@ def load_make_typ(custom=None):
     return module
 
 
-def typ_text(custom, fid):
+def edge1060_typ(custom):
+    """TYP карты для Edge 1050/1060 с принятым видом: его пишет цепочка experiments/edge1060."""
+    work = tempfile.mkdtemp(prefix="garmin-typ1060-")
+    # Переменные EDGE1060_* из окружения сюда не попадают: странице нужен вид по умолчанию.
+    env = {key: value for key, value in os.environ.items()
+           if not key.startswith("EDGE1060_") and key != "TYP_PALETTE"}
+    try:
+        if custom is not None:
+            env["TYP_PALETTE"] = os.path.join(work, "palette.json")
+            with open(env["TYP_PALETTE"], "w", encoding="utf-8") as handle:
+                json.dump(custom, handle)
+        res = subprocess.run(["bash", EDGE1060_BUILD, "--profile", os.path.join(work, "profile")],
+                             env=env, capture_output=True, text=True)
+        if res.returncode != 0:
+            die("experiments/edge1060/build.sh --profile:\n" + res.stdout[-2000:] + res.stderr[-2000:])
+        with open(os.path.join(work, "profile", "typ.txt"), encoding="utf-8") as handle:
+            return handle.read()
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def typ_text(custom, fid, device="classic"):
     """Текст TYP для компилятора mkgmap."""
-    text = load_make_typ(custom).build()
+    text = load_make_typ(custom).build() if device == "classic" else edge1060_typ(custom)
     return text.replace("@FID@", str(fid)).replace("@CODEPAGE@", str(CODE_PAGE))
 
 
@@ -175,14 +209,14 @@ def rgb(colour):
 # --------------------------------------------------------------------------
 # typ: ячейки цветов в скомпилированном TYP
 # --------------------------------------------------------------------------
-def compile_typs(palettes, work):
+def compile_typs(palettes, work, device="classic"):
     """palettes: {метка: палитра или None}. Возвращает {метка: байты TYP}."""
     java, jar = tool_paths()
     sources = []
     for label, custom in palettes.items():
         path = os.path.join(work, label + ".txt")
         with open(path, "w", encoding="utf-8") as handle:
-            handle.write(typ_text(custom, PREVIEW_FID))
+            handle.write(typ_text(custom, PREVIEW_FID, device))
         sources.append(path)
     out = os.path.join(work, "out")
     for start in range(0, len(sources), 40):
@@ -197,7 +231,7 @@ def compile_typs(palettes, work):
     return result
 
 
-def find_slots():
+def find_slots(device="classic"):
     """Ячейки цветов: (смещение в TYP, номер цвета, канал, вид) и таблицы пересчёта."""
     order = names()
     base = {name: ZERO for name in order}
@@ -211,7 +245,7 @@ def find_slots():
 
     work = tempfile.mkdtemp(prefix="garmin-typ-")
     try:
-        typs = compile_typs(palettes, work)
+        typs = compile_typs(palettes, work, device)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -257,7 +291,6 @@ def find_slots():
 
 
 def cmd_typ():
-    info = find_slots()
     order = names()
     palette = defaults()
     legend_names = [name for _group, items in LEGEND for name, _title in items]
@@ -272,11 +305,14 @@ def cmd_typ():
             "legend": [{"title": group, "items": [{"name": n, "title": t} for n, t in items]}
                        for group, items in LEGEND],
         }, handle, ensure_ascii=False, indent=1)
-    with open(os.path.join(DATA, "typ.json"), "w", encoding="utf-8") as handle:
-        json.dump(info, handle, separators=(",", ":"))
-    print("TYP: %d байт, ячеек цвета %d (из них осветлённых %d), проверка на двух палитрах сошлась" %
-          (info["size"], len(info["slots"]), sum(1 for s in info["slots"] if s[3] == 1)))
-    print(os.path.relpath(os.path.join(DATA, "typ.json"), ROOT))
+    for device, suffix in DEVICES:
+        info = find_slots(device)
+        target = os.path.join(DATA, "typ%s.json" % suffix)
+        with open(target, "w", encoding="utf-8") as handle:
+            json.dump(info, handle, separators=(",", ":"))
+        print("%s: TYP %d байт, ячеек цвета %d (из них осветлённых %d), проверка на двух палитрах сошлась" %
+              (os.path.relpath(target, ROOT), info["size"], len(info["slots"]),
+               sum(1 for s in info["slots"] if s[3] == 1)))
 
 
 # --------------------------------------------------------------------------
@@ -304,27 +340,31 @@ def typ_location(path):
 
 
 def cmd_maps():
-    with open(os.path.join(DATA, "typ.json"), encoding="utf-8") as handle:
-        typ_size = json.load(handle)["size"]
     target_dir = os.path.join(SITE, "maps")
     os.makedirs(target_dir, exist_ok=True)
     listing = []
-    for region, title in MAPS:
-        src = os.path.join(ROOT, "out", region + ".img")
-        if not os.path.exists(src):
-            print("нет out/%s.img — пропущена (./build.sh %s)" % (region, region))
-            continue
-        block, blocks, size = typ_location(src)
-        if size != typ_size:
-            die("TYP в out/%s.img (%d байт) собран другим стилем, чем сейчас (%d): пересоберите карту" %
-                (region, size, typ_size))
-        link = os.path.join(target_dir, region + ".img")
-        if os.path.lexists(link):
-            os.remove(link)
-        os.symlink(os.path.relpath(src, target_dir), link)     # локально хватает ссылки
-        listing.append({"id": region, "title": title, "file": "maps/%s.img" % region,
-                        "bytes": os.path.getsize(src), "block": block, "typBlocks": blocks, "typSize": size})
-        print("%s: %d МБ, TYP в блоках %s по %d байт" % (region, os.path.getsize(src) >> 20, blocks, block))
+    for device, suffix in DEVICES:
+        with open(os.path.join(DATA, "typ%s.json" % suffix), encoding="utf-8") as handle:
+            typ_size = json.load(handle)["size"]
+        flag = " --edge1060" if device == "edge1060" else ""
+        for region, title in MAPS:
+            name = region + suffix
+            src = os.path.join(ROOT, "out", name + ".img")
+            if not os.path.exists(src):
+                print("нет out/%s.img — пропущена (./build.sh %s%s)" % (name, region, flag))
+                continue
+            block, blocks, size = typ_location(src)
+            if size != typ_size:
+                die("TYP в out/%s.img (%d байт) собран другим стилем, чем сейчас (%d): пересоберите карту" %
+                    (name, size, typ_size))
+            link = os.path.join(target_dir, name + ".img")
+            if os.path.lexists(link):
+                os.remove(link)
+            os.symlink(os.path.relpath(src, target_dir), link)     # локально хватает ссылки
+            listing.append({"id": name, "region": region, "device": device, "title": title,
+                            "file": "maps/%s.img" % name, "bytes": os.path.getsize(src),
+                            "block": block, "typBlocks": blocks, "typSize": size})
+            print("%s: %d МБ, TYP в блоках %s по %d байт" % (name, os.path.getsize(src) >> 20, blocks, block))
     with open(os.path.join(DATA, "maps.json"), "w", encoding="utf-8") as handle:
         json.dump(listing, handle, ensure_ascii=False, indent=1)
 

@@ -1,6 +1,12 @@
-# Edge 1050/1060 experiments
+# Edge 1050/1060
 
-Work in progress, not part of the regular build. Tried on one Edge 1060 (firmware 5.27).
+The map variant for the Edge 1050 and 1060, and the test maps it grew from. Tried on one Edge 1060 (firmware 5.27).
+
+```bash
+./build.sh prague --edge1060
+```
+
+run in the repository root builds `out/prague-1060.img` with the look accepted on the device: the layout `less` (for Map Detail Less), lines 1.5 times thicker, the night colours of `night-palette.json`, a ground layer. The colours page offers these maps for the Edge 1050 and 1060 (`scripts/make_site.py`).
 
 ## What the device does
 
@@ -52,16 +58,22 @@ The device rounds the start of every line. A plain dash therefore comes out long
 experiments/edge1060/build.sh prague less /tmp/praha-less.img /path/to/folder/with/tools
 ```
 
-Options of `build.sh`, set through the environment:
+runs the chain by hand: another layout, another output file, tools from another folder. The extract `build/prague/prague.osm.pbf` must exist there.
+
+Options of `build.sh`, set through the environment. The values shown are the defaults, which make the accepted look; a variable set to an empty value switches its option off:
 
 - `EDGE1060_BOLD=1.5`: every line width and casing times this factor, for the dense screen (267 ppi). Dashes get longer and route overlays move away from the road by the same factor.
-- `EDGE1060_BOLD_FAR=1.25`: another factor for the two far looks.
-- `EDGE1060_DASH=2`: factor for plain dashes (paths, bad tracks) and route overlays; default: as `EDGE1060_BOLD`.
+- `EDGE1060_BOLD_FAR=1.25`: another factor for the two far looks; empty: as `EDGE1060_BOLD`.
+- `EDGE1060_DASH=2`: factor for plain dashes (paths, bad tracks) and route overlays; empty: as `EDGE1060_BOLD`.
 - `EDGE1060_CYCLEWAY=wide`: the cycleway line about twice as wide.
-- `EDGE1060_NOACCESS=plain`: roads closed to bicycles are drawn as ordinary roads of their kind, without the red dots (`hide`: not drawn at all).
+- `EDGE1060_NOACCESS=plain`: roads closed to bicycles are drawn as ordinary roads of their kind, without the red dots (`hide`: not drawn at all; empty: red dots).
+- `EDGE1060_NIGHT=/full/path/night-palette.json`: night colours from a file with the names of the palette in `typ/make_typ.py`. `night-palette.json` here is the dark theme: dark ground, grey streets, dimmed main roads, bright routes and paths. Tunnels get the night colour of their road half-way to the ground colour; the tunnel of a white road keeps the colour of the road. A night colour belongs to the name of the colour, so it stays when the day colours change.
 - `EDGE1060_NIGHT=same`: night colours written out for every area and line, equal to the day colours.
-- `EDGE1060_NIGHT=/full/path/night-palette.json`: night colours from a file with the names of the palette in `typ/make_typ.py`. `night-palette.json` here is the dark theme: dark ground, grey streets, dimmed main roads, bright routes and paths. Tunnels get the night colour of their road half-way to the ground colour.
-- `EDGE1060_HEAP=6g`: Java heap for splitter and mkgmap (default 4g); a whole country needs more than the default.
+- `EDGE1060_HEAP=6g`: Java heap for splitter and mkgmap; a whole country needs more than 4g.
+- `EDGE1060_KEEP=1`: keep the tiles after the build (they are deleted by default).
+
+Off unless set:
+
 - `EDGE1060_CASING=layer`: a road becomes two lines, a dark one of the full width in the lowest layer and a plain fill above, so that every casing lies under every fill. Without it a road is one line with `BorderWidth`.
 - `EDGE1060_MARKS="lat,lon lat,lon"`: level marks (`marks.py`). At each place the map carries the number of its own level (Garmin resolution 24–18), drawn on that level only, so a photo of the device tells which level is on screen.
 - `EDGE1060_NAME`, `EDGE1060_FID`: map name and family id. Two maps on one device need different ids.

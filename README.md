@@ -21,7 +21,18 @@ The script downloads the Geofabrik extract into `data/` (if it is not there yet)
 Options:
 
 - `--update` downloads the source extract again;
-- `--force` cuts the area out again.
+- `--force` cuts the area out again;
+- `--edge1060` builds the map for an Edge 1050 or 1060, see below.
+
+### Edge 1050 and 1060
+
+```bash
+./build.sh prague --edge1060
+```
+
+The finished map is `out/prague-1060.img`. These devices draw a map differently from an Edge 830: they ignore the line patterns of a TYP file, so every dashed line is cut into real short pieces before mkgmap runs, the lines are thicker for the dense screen, and the TYP carries night colours (`experiments/edge1060/night-palette.json`). What was found on the device and how the variant is put together is in `experiments/edge1060/README.md`.
+
+The cutting makes the build slower and the map about twice as large: Prague takes about 8 minutes, Czechia about 30 minutes and up to 8 GB of work files in `build/edge1060/`, which are deleted when the build ends.
 
 ## View it on a Mac
 
@@ -51,14 +62,16 @@ The page at `http://127.0.0.1:8765` shows the legend and map views that are reco
 
 `scripts/make_site.py` prepares the data for the page:
 
-- `typ` finds where each colour sits in the map file (seconds). Run it after any change to `typ/make_typ.py`.
-- `maps` lists the maps in `out/` that the page offers for download. Run it after `./build.sh`.
+- `typ` finds where each colour sits in the map file (about a minute). The two map variants have different TYP files, so there are two tables: `site/data/typ.json` and `site/data/typ-1060.json`. Run it after any change to `typ/make_typ.py` or to the Edge 1050/1060 variant.
+- `maps` lists the maps in `out/` that the page offers for download, both variants (`out/<region>.img` and `out/<region>-1060.img`). Run it after `./build.sh`.
 - `frames` captures the recolourable views in QMapShack, about two and a half minutes per view. Run it after style changes that alter how the map is drawn. `frames interchange` or `frames center_3-150m` captures one place or one view.
 - `titles` writes the place names from `SCENES` into views that are already captured, without capturing again.
 
 The places and zoom levels of the views and the legend names are the `SCENES` and `LEGEND` tables at the top of `scripts/make_site.py`. Ready-made colour sets are in `site/data/presets.json`, edited by hand.
 
 The page comes in two languages: English (default) and Czech. The choice is remembered in the browser; a link with `?lang=cs` opens the page in Czech. Interface texts are in `site/i18n.js`. Names of colours, places and maps are given in both languages in `scripts/make_site.py` (`tr("English", "Česky")`), names of colour sets in `site/data/presets.json`.
+
+The page asks for the device and hands out the matching variant. The colours picked on the page are the day colours; the night colours of the Edge 1050/1060 map are left as built.
 
 “Save set to a file” gives you `palette.json`. To make those colours the default, copy them into the palette at the top of `typ/make_typ.py` and rebuild the map.
 
@@ -76,9 +89,9 @@ python3 scripts/publish_site.py push
 
 `dist` assembles `build/pages`: the page, the views and the maps cut into 40 MB parts (git rejects files over 100 MB; the page joins the parts itself). To look at it before publishing: `python3 scripts/serve_site.py 8766 build/pages`.
 
-`push` sends that folder to `gh-pages` as a single commit that replaces the previous one. History is not kept on purpose: every map rebuild would otherwise add 230 MB to the repository. The upload takes a few minutes and the page updates a minute or two later.
+`push` sends that folder to `gh-pages` as a single commit that replaces the previous one. History is not kept on purpose: every map rebuild would otherwise add the size of all the maps to the repository. `dist` prints the size of the folder and warns when it is over 1 GB, the limit for a GitHub Pages site. The upload takes a few minutes and the page updates a minute or two later.
 
-After a map rebuild the order is: `./build.sh <region>`, `python3 scripts/make_site.py maps`, then `dist` and `push`.
+After a map rebuild the order is: `./build.sh <region>` and `./build.sh <region> --edge1060`, `python3 scripts/make_site.py maps`, then `dist` and `push`.
 
 ## Add a region
 
@@ -99,7 +112,7 @@ There is one style for all regions. An Edge will not open a file larger than 4 G
 
 ## Put the map on an Edge from a Mac
 
-So far the map has been tried on one Edge 830 (16 Nov 2026): labels, navigation and rerouting work there, and so does a map downloaded from the colours page. The steps below follow the manual and have not been tried on an Edge 1060.
+So far the map has been tried on one Edge 830 (16 Nov 2026): labels, navigation and rerouting work there, and so does a map downloaded from the colours page. The Edge 1050/1060 variant has been tried on one Edge 1060 (19 Nov 2026, firmware 5.27); what differs there is listed after the steps.
 
 1. Install [OpenMTP](https://openmtp.ganeshrvel.com). A Mac does not see an Edge 1050 as a disk, so an MTP client is needed.
 2. Quit other MTP programs (Android File Transfer, Garmin Express), otherwise OpenMTP will not connect.
@@ -109,6 +122,13 @@ So far the map has been tried on one Edge 830 (16 Nov 2026): labels, navigation 
 6. Unplug the cable and wait for the device to restart.
 7. On the Edge, switch the map on in the profile you ride with: profile settings → Navigation → Map → Configure Maps. The map is listed under the name set in `NAME`.
 8. Leave the stock Garmin Cycle Map switched on: routing and Up Ahead depend on it, because this map carries no routing data. The map is built with draw priority 31 (`DRAW_PRIORITY` in `build.sh`) so that it is drawn over the stock one; an earlier build with priority 25 was not shown at all on an Edge 830 while the stock map was on. With priority 31 the 830 shows this map, and navigation and rerouting work (reported 16 Nov 2026). If this map does not show on your device, switch the stock map off for the time being.
+
+On an Edge 1060:
+
+- Use the map built with `--edge1060` (`out/prague-1060.img`).
+- Maps go into `Garmin/Maps`, not into `Garmin`.
+- Set Map Detail to Less (profile settings → Navigation → Map → Appearance). The map is drawn for that setting.
+- The stock map is TopoActive Europe. While it was switched on, the device did not show this map; with TopoActive off it did. The two have not been tried together since.
 
 ## What is where
 
@@ -123,6 +143,7 @@ So far the map has been tried on one Edge 830 (16 Nov 2026): labels, navigation 
 | `typ/icons.py` | Icon drawings |
 | `scripts/` | Screenshots and viewing; `make_site.py` and `serve_site.py` are the data and the server for the colour page, `publish_site.py` publishes it to GitHub Pages |
 | `site/` | The colour page: page code, `i18n.js` (texts in two languages), `data/` (legend, views, colour slots), `maps/` (links to the maps in `out/`) |
+| `experiments/edge1060/` | The Edge 1050/1060 variant (`build.sh --edge1060` runs it): cutter, style and TYP generator, night palette; test maps and the findings from the device |
 | `tools/` | mkgmap, splitter, an environment with osmium and Java |
 | `data/` | OSM source extracts |
 | `build/`, `out/` | Intermediate files and finished maps |

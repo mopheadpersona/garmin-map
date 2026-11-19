@@ -53,8 +53,9 @@ def main():
                      % (new_fid, tile[4:8], name, os.path.join(split, tile)))
 
     jar = sorted(d for d in os.listdir(os.path.join(main_dir, "tools")) if d.startswith("mkgmap-r"))[-1]
-    java = next(p for p in (os.path.join(main_dir, "tools/env/lib/jvm/bin/java"),
-                            os.path.join(main_dir, "tools/env/bin/java")) if os.access(p, os.X_OK))
+    java = os.environ.get("JAVA") or next(
+        p for p in (os.path.join(main_dir, "tools/env/lib/jvm/bin/java"),
+                    os.path.join(main_dir, "tools/env/bin/java")) if os.access(p, os.X_OK))
     cmd = [java, "-Xmx" + os.environ.get("EDGE1060_HEAP", "4g"), "-jar", os.path.join(main_dir, "tools", jar, "mkgmap.jar"),
            "--output-dir=" + os.path.join(work, "img"), "--style-file=" + style_dir,
            "--family-id=%d" % new_fid, "--product-id=1",

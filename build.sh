@@ -1,11 +1,15 @@
 #!/bin/bash
 # Сборка карты Garmin для одного региона: выгрузка OSM -> вырезка -> splitter -> mkgmap -> out/<регион>.img
 #
-#   ./build.sh <регион> [--update] [--force]
+#   ./build.sh <регион> [--edge1060] [--update] [--force]
 #
-#   <регион>   имя файла regions/<регион>.conf
-#   --update   заново скачать исходные выгрузки, даже если они уже лежат в data/
-#   --force    заново вырезать область, даже если вырезка свежее исходников
+#   <регион>    имя файла regions/<регион>.conf
+#   --edge1060  карта для Edge 1050/1060: out/<регион>-1060.img. Эти приборы не рисуют узоры линий,
+#               поэтому пунктиры нарезаются настоящими штрихами (experiments/edge1060/README.md).
+#               Сборка дольше, карта вдвое больше: Прага около 8 минут, Чехия около 30 минут
+#               и до 8 ГБ временных файлов в build/edge1060/ (в конце удаляются)
+#   --update    заново скачать исходные выгрузки, даже если они уже лежат в data/
+#   --force     заново вырезать область, даже если вырезка свежее исходников
 
 set -euo pipefail
 
@@ -33,17 +37,19 @@ find_tool() {
 REGION=""
 UPDATE=0
 FORCE=0
+EDGE1060=0
 for arg in "$@"; do
   case "$arg" in
     --update) UPDATE=1 ;;
     --force)  FORCE=1 ;;
-    -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --edge1060) EDGE1060=1 ;;
+    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) die "неизвестный параметр $arg" ;;
     *)  [ -z "$REGION" ] || die "регион указан дважды"; REGION="$arg" ;;
   esac
 done
 if [ -z "$REGION" ]; then
-  echo "Использование: ./build.sh <регион> [--update] [--force]"
+  echo "Использование: ./build.sh <регион> [--edge1060] [--update] [--force]"
   echo "Доступные регионы:"
   ls regions/*.conf 2>/dev/null | sed 's|regions/||; s|\.conf$||; s|^|  |'
   exit 1
@@ -82,13 +88,26 @@ done
 
 WORK="build/$REGION"
 mkdir -p data out "$WORK"
+STEPS=5
+[ "$EDGE1060" = 1 ] && STEPS=2          # дальше у варианта для Edge 1050/1060 свои шаги
+
+# Итог: размер готовой карты и предупреждение о пределе Edge.
+report() {
+  local size
+  size=$(stat -f %z "$1" 2>/dev/null || stat -c %s "$1")
+  echo
+  echo "Готово: $1 ($((size / 1024 / 1024)) МБ)"
+  if [ "$size" -ge 4294967296 ]; then
+    echo "ВНИМАНИЕ: файл больше 4 ГБ, Edge его не откроет. Разделите регион на части."
+  fi
+}
 
 echo "Регион:  $REGION ($NAME), id $MAP_ID, cp$CODE_PAGE"
 echo "mkgmap:  $MKGMAP_JAR"
 echo "Java:    $("$JAVA" -version 2>&1 | head -1)"
 
 # ---------- 1. исходные выгрузки ----------
-step "1/5 Исходные данные"
+step "1/$STEPS Исходные данные"
 SRC_FILES=()
 for url in $SOURCES; do
   file="data/$(basename "$url")"
@@ -103,7 +122,7 @@ for url in $SOURCES; do
 done
 
 # ---------- 2. вырезка ----------
-step "2/5 Вырезка области"
+step "2/$STEPS Вырезка области"
 EXTRACT="$WORK/$REGION.osm.pbf"
 need_extract=$FORCE
 [ -f "$EXTRACT" ] || need_extract=1
@@ -144,6 +163,17 @@ else
   echo "Вырезка актуальна, пропускаю (--force, чтобы вырезать заново)"
 fi
 echo "Вырезка: $EXTRACT ($(du -hL "$EXTRACT" | cut -f1))"
+
+# ---------- вариант для Edge 1050/1060 ----------
+# Вид, принятый на приборе, задан по умолчанию в самой цепочке; рабочие файлы — в build/edge1060.
+if [ "$EDGE1060" = 1 ]; then
+  absolute() { case "$1" in /*) echo "$1" ;; *) echo "$ROOT/$1" ;; esac; }
+  JAVA="$(absolute "$JAVA")" OSMIUM="$(absolute "$OSMIUM")" \
+  EDGE1060_WORK="${EDGE1060_WORK:-$ROOT/build/edge1060}" \
+    experiments/edge1060/build.sh "$REGION" default "$ROOT/out/$REGION-1060.img" "$ROOT"
+  report "out/$REGION-1060.img"
+  exit 0
+fi
 
 # ---------- 3. нарезка на тайлы ----------
 step "3/5 Splitter"
@@ -199,10 +229,4 @@ warnings=$(grep -E "^WARNING" "$WORK/mkgmap.log" | grep -c -v "Setting max-jobs"
 
 [ -f "$WORK/img/gmapsupp.img" ] || die "mkgmap не создал gmapsupp.img, см. $WORK/mkgmap.log"
 cp "$WORK/img/gmapsupp.img" "out/$REGION.img"
-
-size=$(stat -f %z "out/$REGION.img" 2>/dev/null || stat -c %s "out/$REGION.img")
-echo
-echo "Готово: out/$REGION.img ($((size / 1024 / 1024)) МБ)"
-if [ "$size" -ge 4294967296 ]; then
-  echo "ВНИМАНИЕ: файл больше 4 ГБ, Edge его не откроет. Разделите регион на части."
-fi
+report "out/$REGION.img"

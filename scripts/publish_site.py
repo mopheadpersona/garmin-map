@@ -10,8 +10,8 @@ dist. Копирует site/ в build/pages. Карты режутся на ча
 Проверить папку до выкладки: python3 scripts/serve_site.py 8766 build/pages
 
 push. В build/pages создаётся репозиторий из одного коммита и отправляется в ветку gh-pages
-с заменой (--force). История не копится нарочно: иначе каждая пересборка карты добавляла бы
-в репозиторий ещё 230 МБ. В эту ветку попадает только готовая страница, исходников проекта
+с заменой (--force). История не копится нарочно: иначе каждая пересборка карт добавляла бы
+в репозиторий весь их размер. В эту ветку попадает только готовая страница, исходников проекта
 в ней нет. Третьим аргументом можно дать строку, которая допишется в конец сообщения коммита.
 
 Репозиторий создан один раз командой gh repo create mopheadpersona/garmin-map --public;
@@ -38,6 +38,7 @@ AUTHOR_NAME = "mopheadpersona"
 AUTHOR_EMAIL = "39918189+mopheadpersona@users.noreply.github.com"
 
 PART_BYTES = 40 << 20
+PAGES_LIMIT = 1 << 30           # предел размера сайта на GitHub Pages (мягкий): 1 ГБ
 PAGE_FILES = ("index.html", "app.js", "i18n.js", "style.css")
 
 README = """# Map colours for Garmin Edge
@@ -112,6 +113,9 @@ def cmd_dist():
     total = sum(os.path.getsize(os.path.join(folder, name))
                 for folder, _dirs, names in os.walk(DIST) for name in names)
     print("%s: %d МБ" % (os.path.relpath(DIST, ROOT), total >> 20))
+    if total > PAGES_LIMIT:
+        print("ВНИМАНИЕ: страница больше 1 ГБ — это предел GitHub Pages. Уберите карту из MAPS "
+              "в scripts/make_site.py или вынесите карты на другой хостинг.")
 
 
 def git(*args):
