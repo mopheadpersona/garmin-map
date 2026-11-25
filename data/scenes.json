@@ -1,0 +1,213 @@
+{
+ "groups": [
+  {
+   "file": "g01",
+   "names": [
+    "BG",
+    "FOREST",
+    "PARK"
+   ]
+  },
+  {
+   "file": "g02",
+   "names": [
+    "MEADOW",
+    "PLANTATION",
+    "PLANTATION_MARK"
+   ]
+  },
+  {
+   "file": "g03",
+   "names": [
+    "BUILTUP",
+    "INDUSTRIAL",
+    "CEMETERY"
+   ]
+  },
+  {
+   "file": "g04",
+   "names": [
+    "CEMETERY_CROSS",
+    "WATER",
+    "WETLAND"
+   ]
+  },
+  {
+   "file": "g05",
+   "names": [
+    "CLOSED_HATCH",
+    "GREEN",
+    "GREEN_EDGE"
+   ]
+  },
+  {
+   "file": "g06",
+   "names": [
+    "PRIMARY",
+    "PRIMARY_EDGE",
+    "SECONDARY"
+   ]
+  },
+  {
+   "file": "g07",
+   "names": [
+    "SECONDARY_EDGE",
+    "WHITE",
+    "WHITE_EDGE"
+   ]
+  },
+  {
+   "file": "g08",
+   "names": [
+    "PEDESTRIAN",
+    "PEDESTRIAN_EDGE",
+    "CYCLE"
+   ]
+  },
+  {
+   "file": "g09",
+   "names": [
+    "MTB",
+    "RAIL",
+    "NO_ENTRY"
+   ]
+  },
+  {
+   "file": "g10",
+   "names": [
+    "GRAVEL",
+    "GRAVEL_EDGE",
+    "BAD_TRACK"
+   ]
+  },
+  {
+   "file": "g11",
+   "names": [
+    "PATH",
+    "HARD_PATH",
+    "FERRY"
+   ]
+  },
+  {
+   "file": "g12",
+   "names": [
+    "BORDER",
+    "LABEL"
+   ]
+  }
+ ],
+ "frames": [
+  {
+   "scene": "interchange",
+   "sceneTitle": {
+    "en": "Interchange",
+    "cs": "Dálniční křižovatka"
+   },
+   "screen": "2-500m",
+   "dir": "data/frames/interchange_2-500m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 4.803346544148106,
+   "scaleMetres": 500
+  },
+  {
+   "scene": "interchange",
+   "sceneTitle": {
+    "en": "Interchange",
+    "cs": "Dálniční křižovatka"
+   },
+   "screen": "3-150m",
+   "dir": "data/frames/interchange_3-150m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 0.9606693088296212,
+   "scaleMetres": 150
+  },
+  {
+   "scene": "center",
+   "sceneTitle": {
+    "en": "City",
+    "cs": "Město"
+   },
+   "screen": "2-500m",
+   "dir": "data/frames/center_2-500m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 4.812177594810864,
+   "scaleMetres": 500
+  },
+  {
+   "scene": "center",
+   "sceneTitle": {
+    "en": "City",
+    "cs": "Město"
+   },
+   "screen": "3-150m",
+   "dir": "data/frames/center_3-150m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 0.9624355189621727,
+   "scaleMetres": 150
+  },
+  {
+   "scene": "brdy-forest",
+   "sceneTitle": {
+    "en": "Forest",
+    "cs": "Les"
+   },
+   "screen": "2-500m",
+   "dir": "data/frames/brdy-forest_2-500m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 4.850913363015968,
+   "scaleMetres": 500
+  },
+  {
+   "scene": "brdy-forest",
+   "sceneTitle": {
+    "en": "Forest",
+    "cs": "Les"
+   },
+   "screen": "3-150m",
+   "dir": "data/frames/brdy-forest_3-150m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 0.9701826726031935,
+   "scaleMetres": 150
+  },
+  {
+   "scene": "outskirts",
+   "sceneTitle": {
+    "en": "Outskirts",
+    "cs": "Okraj města"
+   },
+   "screen": "2-500m",
+   "dir": "data/frames/outskirts_2-500m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 4.823313249236206,
+   "scaleMetres": 500
+  },
+  {
+   "scene": "outskirts",
+   "sceneTitle": {
+    "en": "Outskirts",
+    "cs": "Okraj města"
+   },
+   "screen": "3-150m",
+   "dir": "data/frames/outskirts_3-150m",
+   "width": 960,
+   "height": 1280,
+   "density": 2,
+   "metresPerPx": 0.964662649847241,
+   "scaleMetres": 150
+  }
+ ]
+}

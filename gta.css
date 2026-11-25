@@ -1,0 +1,255 @@
+/* Режим «GTA VI style» (gta.js). Всё здесь действует только при body.gta, кроме переключателя
+   в шапке и скрытого неба. Цвета страницы следуют за переключателем «День / Ночь» под картой.
+   Градиенты — из коллекции grabient.com/gta-6-gradients, с её собственными опорными цветами. */
+
+:root {
+  /* 3. градиент логотипа: оранжевый, розовый, фиолетовый, синий */
+  --g-logo: linear-gradient(90deg in oklch, oklch(76.53% 0.1575 52.90), oklch(70.47% 0.1875 15.90), oklch(64.09% 0.2332 342.10), oklch(56.28% 0.2161 315.90), oklch(49.93% 0.1873 292.21), oklch(51.56% 0.1814 265.12));
+  --g-logo-up: linear-gradient(0deg in oklch, oklch(76.53% 0.1575 52.90) 0%, oklch(70.47% 0.1875 15.90) 26%, oklch(64.09% 0.2332 342.10) 48%, oklch(56.28% 0.2161 315.90) 68%, oklch(49.93% 0.1873 292.21) 81%, oklch(51.56% 0.1814 265.12) 100%);
+  /* 1. неоновый кобальт, маджента и красный */
+  --g-neon: linear-gradient(90deg in oklch, oklch(58.66% 0.2094 265.08), oklch(63.39% 0.1929 277.76), oklch(62.99% 0.1819 309.46), oklch(60.24% 0.2163 349.62), oklch(61.42% 0.2494 25.56));
+  /* 9. закат над Леонидой */
+  --g-sun: radial-gradient(circle at 50% 50% in oklch, oklch(61.81% 0.2398 350.16) 0%, oklch(67.44% 0.2204 10.41) 15%, oklch(77.95% 0.1339 40.45) 33%, oklch(85.66% 0.0936 57.81) 46%, oklch(79.33% 0.1168 34.75) 56%, oklch(67.49% 0.1597 355.63) 64%, oklch(54.59% 0.1953 316.66) 72%, oklch(43.92% 0.1927 292.06) 80%, oklch(33.27% 0.1581 275.68) 87%, oklch(24.19% 0.1178 264.57) 95%, oklch(20.10% 0.0803 259.59) 100%);
+  /* 7. пастельные небоскрёбы из второго трейлера */
+  --g-sky: linear-gradient(180deg in oklch, oklch(71.82% 0.0712 229.34) 0%, oklch(79.91% 0.0538 295.94) 23%, oklch(84.64% 0.0631 351.90) 36%, oklch(90.71% 0.0453 42.66) 48%, oklch(94.42% 0.0237 79.14) 58%, oklch(89.11% 0.0373 142.84) 71%, oklch(80.35% 0.0620 188.01) 84%, oklch(71.33% 0.0820 192.43) 100%);
+  --gta-ease: cubic-bezier(.2, .7, .2, 1);
+  --gta-fade: 320ms;
+}
+
+/* ---------- переключатель карт в шапке (виден в обоих режимах) ---------- */
+.modes { display: flex; align-self: center; }
+.modes a {
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; margin-left: -1px;
+  border: 1px solid var(--ink); background: var(--panel); color: var(--ink); font-size: 15px; text-decoration: none;
+}
+.modes a:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+.modes a:last-child { border-radius: 0 4px 4px 0; }
+.modes a:hover { background: #E4E6E7; }
+.modes a[aria-current="page"] { background: var(--ink); color: #fff; }
+.modes .gta::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--g-logo-up); }
+
+.sky { display: none; }
+
+/* ---------- цвета режима: ночь и день ---------- */
+body.gta[data-time="night"] {
+  --bg: #0E142C;           /* земля ночной карты: экран и страница — одна поверхность */
+  --ink: #F2F4FA;
+  --muted: #C0B7DD;
+  --accent: #F79AC9;
+  --surface: rgba(19, 25, 56, 0.66);
+  --chip: rgba(255, 255, 255, 0.06);
+  --line: rgba(192, 183, 221, 0.2);
+  --ring: #F3459E;
+  --pressed-bg: #F2F4FA;
+  --pressed-ink: #0E142C;
+  --title: var(--g-logo-up);
+}
+body.gta[data-time="day"] {
+  --bg: #F5EBDB;
+  --ink: #191433;
+  --muted: #45386F;
+  --accent: #833FC5;
+  --surface: rgba(255, 255, 255, 0.7);
+  --chip: rgba(255, 255, 255, 0.55);
+  --line: rgba(69, 56, 111, 0.18);
+  --ring: #833FC5;
+  --pressed-bg: #191433;
+  --pressed-ink: #FFFFFF;
+  --title: var(--g-neon);
+}
+
+body.gta {
+  height: auto; min-height: 100dvh; display: block;
+  background: var(--bg); color: var(--ink);
+  transition: background-color var(--gta-fade) var(--gta-ease), color var(--gta-fade) var(--gta-ease);
+}
+body.gta :focus-visible { outline-color: var(--ring); outline-offset: 3px; }
+body.gta .bench { display: none; }
+
+/* Небо: два неподвижных слоя, которые сменяют друг друга, — градиенты анимировать не нужно. */
+body.gta .sky { display: block; position: fixed; inset: 0; z-index: -2; pointer-events: none; }
+.sky i { position: absolute; inset: 0; opacity: 0; transition: opacity var(--gta-fade) var(--gta-ease); }
+.sky .day { background: radial-gradient(ellipse 45% 55% at 74% 46%, rgba(255, 241, 226, 0.95), rgba(255, 213, 190, 0.5) 45%, transparent 75%), var(--g-sky); }
+.sky .night {
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 112%, rgba(121, 39, 236, 0.34), transparent 70%),
+    radial-gradient(ellipse 40% 40% at 8% -8%, rgba(51, 93, 206, 0.28), transparent 70%),
+    #0E142C;
+}
+body.gta[data-time="day"] .sky .day, body.gta[data-time="night"] .sky .night { opacity: 1; }
+
+/* ---------- шапка в режиме GTA ---------- */
+body.gta .top {
+  position: sticky; top: 0; z-index: 10; align-items: center; gap: 12px 24px; padding: 14px 32px;
+  border-bottom: 0; background: var(--surface);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
+}
+body.gta .top::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: var(--g-logo); }
+body.gta h1 { font-size: 34px; line-height: 1; }
+
+body.gta .modes, body.gta .languages, .gta-page .pills {
+  display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line);
+}
+body.gta .modes a, body.gta .languages button, .gta-page .pills button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: auto; min-height: 40px; margin: 0; padding: 0 16px;
+  border: 2px solid transparent; border-radius: 999px; background: transparent; color: var(--ink);
+  font-weight: 600; cursor: pointer;
+  transition: background-color 180ms var(--gta-ease), color 180ms var(--gta-ease);
+}
+body.gta .languages button { min-height: 36px; padding: 0 12px; font-size: 15px; }
+body.gta .modes a:first-child, body.gta .modes a:last-child,
+body.gta .languages button:first-child, body.gta .languages button:last-child { border-radius: 999px; margin-left: 0; }
+/* наведение — только на невыбранное, чтобы выбранная кнопка не теряла заливку под курсором */
+body.gta .modes a:not([aria-current]):hover, body.gta .languages button:not([aria-pressed="true"]):hover,
+.gta-page .pills button:not([aria-pressed="true"]):hover { background: var(--chip); }
+body.gta .languages [aria-pressed="true"], .gta-page .pills [aria-pressed="true"] { background: var(--pressed-bg); color: var(--pressed-ink); }
+body.gta .modes .gta[aria-current="page"] { background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--g-logo) border-box; color: var(--ink); }
+
+/* ---------- первый экран: рассказ и мини-карта ---------- */
+.gta-page { overflow-x: clip; }       /* солнце за мини-картой не должно расширять страницу */
+.gta-page[hidden] { display: none; }
+.gta-main { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+.gta-page .hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 40px 56px; align-items: center;
+  min-height: calc(100dvh - 74px); padding: 28px 0 40px;
+}
+.gta-page .pitch { max-width: 580px; display: grid; gap: 22px; }
+.gta-page .eyebrow {
+  justify-self: start; margin: 0; padding: 5px 14px; border: 1.5px solid transparent; border-radius: 999px;
+  background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--g-logo) border-box;
+  font-size: 15px; font-weight: 600; letter-spacing: .02em;
+}
+.gta-page .title { margin: 0; display: grid; gap: 2px; text-transform: uppercase; }
+.gta-page .title .pre { font: 800 clamp(26px, 2.6vw, 34px)/1 var(--display); letter-spacing: .08em; color: var(--muted); }
+.gta-page .title .big {
+  justify-self: start; padding: 0 .1em .04em 0;      /* место для наклона букв: background-clip его иначе срежет */
+  font: italic 900 clamp(68px, 8.4vw, 122px)/.86 var(--display); letter-spacing: -.005em;
+  background: var(--title); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.gta-page .gta-lede { margin: 0; font-size: 19px; line-height: 1.5; max-width: 46ch; }
+
+.gta-page .features { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; }
+.gta-page .features li { display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: start; font-size: 15px; line-height: 1.4; color: var(--muted); }
+.gta-page .features b { display: block; color: var(--ink); font-weight: 600; font-size: 16px; }
+.gta-page .ico { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); color: var(--accent); }
+.gta-page svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.gta-page .card {
+  padding: 18px 20px; border-radius: 16px; background: var(--surface);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--line), 0 20px 40px -28px rgba(10, 8, 40, .55);
+}
+.gta-page .card h2, .gta-page .card h3 { margin: 0 0 12px; font: 800 26px/1 var(--display); letter-spacing: .01em; }
+.gta-page .get-row { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.gta-page .get-row .field { flex: 1 1 200px; }
+.gta-page .field > span { color: var(--muted); }
+.gta-page select { height: 48px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--chip); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+body.gta[data-time="night"] .gta-page select option { background: #0E142C; }
+.gta-page .go {
+  height: 48px; padding: 0 26px; border: 0; border-radius: 12px; cursor: pointer;
+  background: var(--g-neon); color: #fff;
+  font: 700 19px/1 var(--ui); letter-spacing: .01em;   /* белый на неоне 3,6–4,4 : 1 — хватает для крупного жирного текста */
+  box-shadow: 0 10px 26px -10px rgba(215, 51, 148, .75);
+  transition: transform 160ms var(--gta-ease), box-shadow 160ms var(--gta-ease), filter 160ms var(--gta-ease);
+}
+.gta-page .go:hover { background: var(--g-neon); filter: brightness(1.07) saturate(1.1); box-shadow: 0 14px 34px -10px rgba(215, 51, 148, .9); }
+.gta-page .go:active { transform: scale(.97); }
+.gta-page .go:disabled { opacity: .55; cursor: default; transform: none; }
+.gta-page .go svg { width: 18px; height: 18px; vertical-align: -3px; margin-right: 8px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.gta-page .note { margin: 10px 0 0; font-size: 14px; color: var(--muted); min-height: 1.4em; }
+.gta-page .note.error { color: var(--accent); font-weight: 600; }
+.gta-page progress { accent-color: #F3459E; }
+
+/* ---------- мини-карта: карта Edge в рамке игрового HUD ---------- */
+.gta-page .viewer { position: relative; display: grid; justify-items: center; gap: 16px; isolation: isolate; }
+/* Солнце за картой: ночью — «закат над Леонидой», днём — мягкий блик неба. */
+.gta-page .viewer::before {
+  content: ""; position: absolute; z-index: -1; left: 50%; top: 47%; width: 860px; aspect-ratio: 1; border-radius: 50%;
+  transform: translate(-50%, -50%); background: var(--g-sun); opacity: 0; transition: opacity var(--gta-fade) var(--gta-ease);
+  -webkit-mask: radial-gradient(circle, #000 52%, transparent 71%); mask: radial-gradient(circle, #000 52%, transparent 71%);
+}
+body.gta[data-time="night"] .gta-page .viewer::before { opacity: .62; }
+.gta-page .minimap { position: relative; }
+.gta-page .mm-screen {
+  position: relative; overflow: hidden; border-radius: 26px; background: #000;
+  width: clamp(280px, calc((100dvh - 320px) * .75), 440px); aspect-ratio: 3 / 4;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .82), 0 0 0 4.5px rgba(25, 20, 51, .22), 0 30px 60px -28px rgba(8, 6, 30, .7);
+  transition: box-shadow var(--gta-fade) var(--gta-ease);
+}
+body.gta[data-time="night"] .gta-page .mm-screen {
+  box-shadow: 0 0 0 3px rgba(242, 244, 250, .5), 0 0 0 4.5px rgba(0, 0, 0, .35), 0 0 70px -12px rgba(243, 69, 158, .55), 0 30px 60px -28px rgba(0, 0, 0, .9);
+}
+.gta-page .mm-screen::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22), inset 0 0 34px rgba(12, 10, 36, .3); }
+.gta-page .mm-screen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity var(--gta-fade) var(--gta-ease); }
+body.gta[data-time="day"] .mm-screen .n, body.gta[data-time="night"] .mm-screen .d { opacity: 0; }
+.gta-page .player { position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; transform: translate(-50%, -50%); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .35)); }
+.gta-page .north { position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: #111; color: #fff; font: 700 14px/1 var(--ui);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .9), 0 2px 6px rgba(0, 0, 0, .35); pointer-events: none; }
+.gta-page .mm-status { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: #F2F4FA; background: rgba(14, 20, 44, .86); }
+.gta-page .mm-status[hidden] { display: none; }
+.gta-page .place { margin: 2px 0 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.gta-page .place b { font: italic 900 26px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.gta-page .place span { font-size: 16px; color: var(--muted); }
+.gta-page .place span:not(:empty)::before { content: ""; display: inline-block; width: 2px; height: 16px; margin-right: 10px; vertical-align: -2px; background: var(--g-logo-up); border-radius: 1px; }
+.gta-page .controls { display: flex; gap: 12px 16px; flex-wrap: wrap; justify-content: center; }
+.gta-page .scenes button, .gta-page .zoom button { font-size: 15px; }
+.gta-page .time button { min-width: 108px; }
+.gta-page .time svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* День — цвета солнца, ночь — фиолет сумерек: переключатель сам показывает, что делает. */
+.gta-page .time [data-time="day"][aria-pressed="true"] { background: linear-gradient(90deg in oklch, oklch(85.66% 0.0936 57.81), oklch(76.53% 0.1575 52.90)); color: #191433; }
+.gta-page .time [data-time="night"][aria-pressed="true"] { background: linear-gradient(90deg in oklch, oklch(31.91% 0.1933 279.83), oklch(51.97% 0.2604 293.58)); color: #fff; }
+body.gta .gta-page .credit { margin: 0; font-size: 13px; color: var(--muted); text-align: center; }
+
+/* ---------- легенда и установка ---------- */
+.gta-page .key { padding: 24px 0 24px; }
+.gta-page .key-head { display: flex; align-items: baseline; gap: 8px 20px; flex-wrap: wrap; margin-bottom: 18px; }
+.gta-page .key-head h2, .gta-page .install-head { margin: 0; font: italic 900 52px/1 var(--display); text-transform: uppercase; }
+.gta-page .key-head p { margin: 0; color: var(--muted); }
+.gta-page .key-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.gta-page .key-grid .stack { display: grid; gap: 18px; }
+.gta-page .k-row { display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: center; padding: 5px 0; }
+.gta-page .k-well { position: relative; height: 32px; border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.gta-page .k-well > div { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity var(--gta-fade) var(--gta-ease); }
+body.gta[data-time="day"] .k-well .n, body.gta[data-time="night"] .k-well .d { opacity: 0; }
+.gta-page .k-line { width: 100%; }
+.gta-page .k-area { width: 100%; height: 100%; }
+.gta-page .k-text { font: 600 15px/1 var(--ui); letter-spacing: .03em; }
+
+.gta-page .gta-install { padding: 32px 0 56px; display: grid; gap: 18px; }
+.gta-page .gta-install .card { max-width: 860px; }
+.gta-page .gta-install ol { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; }
+.gta-page .gta-install li::marker { font-weight: 700; color: var(--accent); }
+.gta-page .gta-note { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+
+.gta-page .foot { max-width: 1320px; margin: 0 auto; padding: 18px 32px 28px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+
+/* ---------- узкий экран: рассказ, потом карта, потом остальное ---------- */
+@media (max-width: 980px) {
+  .gta-page .hero { grid-template-columns: minmax(0, 640px); justify-content: center; min-height: 0; gap: 22px; }
+  .gta-page .pitch { display: contents; }
+  .gta-page .eyebrow { order: 1; } .gta-page .title { order: 2; } .gta-page .gta-lede { order: 3; }
+  .gta-page .viewer { order: 4; margin: 10px 0; }
+  .gta-page .features { order: 5; } .gta-page .get { order: 6; }
+  .gta-page .key-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  body.gta .top { position: relative; padding: 12px 16px; }    /* в две строки шапка слишком высокая, чтобы висеть наверху */
+  body.gta h1 { font-size: 28px; }
+  body.gta .modes { order: 3; width: 100%; }
+  body.gta .modes a { flex: 1; }
+  .gta-main { padding: 0 16px; }
+  .gta-page .features { grid-template-columns: 1fr; }
+  .gta-page .key-grid { grid-template-columns: 1fr; }
+  .gta-page .key-head h2, .gta-page .install-head { font-size: 44px; }
+  .gta-page .scenes { width: 100%; }
+  .gta-page .scenes button { flex: 1; padding: 0 6px; font-size: 14px; }
+  .gta-page .mm-screen { width: min(360px, calc(100vw - 48px)); border-radius: 22px; }
+  .gta-page .viewer::before { width: 560px; }
+  .gta-page .foot { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.gta, body.gta *, body.gta *::before, body.gta *::after { transition: none !important; }
+}

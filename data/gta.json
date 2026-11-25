@@ -1,0 +1,93 @@
+{
+ "screens": [
+  "500m",
+  "200m",
+  "80m"
+ ],
+ "scenes": [
+  {
+   "id": "interchange",
+   "title": {
+    "en": "Interchange",
+    "cs": "Dálniční křižovatka"
+   },
+   "place": "Zdiby",
+   "street": "",
+   "frames": {
+    "day": {
+     "500m": "data/gta/interchange_500m_day.png",
+     "200m": "data/gta/interchange_200m_day.png",
+     "80m": "data/gta/interchange_80m_day.png"
+    },
+    "night": {
+     "500m": "data/gta/interchange_500m_night.png",
+     "200m": "data/gta/interchange_200m_night.png",
+     "80m": "data/gta/interchange_80m_night.png"
+    }
+   }
+  },
+  {
+   "id": "center",
+   "title": {
+    "en": "City",
+    "cs": "Město"
+   },
+   "place": "Staré Město",
+   "street": "Staroměstské náměstí",
+   "frames": {
+    "day": {
+     "500m": "data/gta/center_500m_day.png",
+     "200m": "data/gta/center_200m_day.png",
+     "80m": "data/gta/center_80m_day.png"
+    },
+    "night": {
+     "500m": "data/gta/center_500m_night.png",
+     "200m": "data/gta/center_200m_night.png",
+     "80m": "data/gta/center_80m_night.png"
+    }
+   }
+  },
+  {
+   "id": "brdy-forest",
+   "title": {
+    "en": "Forest",
+    "cs": "Les"
+   },
+   "place": "Brdy",
+   "street": "Hořovská",
+   "frames": {
+    "day": {
+     "500m": "data/gta/brdy-forest_500m_day.png",
+     "200m": "data/gta/brdy-forest_200m_day.png",
+     "80m": "data/gta/brdy-forest_80m_day.png"
+    },
+    "night": {
+     "500m": "data/gta/brdy-forest_500m_night.png",
+     "200m": "data/gta/brdy-forest_200m_night.png",
+     "80m": "data/gta/brdy-forest_80m_night.png"
+    }
+   }
+  },
+  {
+   "id": "outskirts",
+   "title": {
+    "en": "Outskirts",
+    "cs": "Okraj města"
+   },
+   "place": "Zbraslav",
+   "street": "Zbraslavské náměstí",
+   "frames": {
+    "day": {
+     "500m": "data/gta/outskirts_500m_day.png",
+     "200m": "data/gta/outskirts_200m_day.png",
+     "80m": "data/gta/outskirts_80m_day.png"
+    },
+    "night": {
+     "500m": "data/gta/outskirts_500m_night.png",
+     "200m": "data/gta/outskirts_200m_night.png",
+     "80m": "data/gta/outskirts_80m_night.png"
+    }
+   }
+  }
+ ]
+}
