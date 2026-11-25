@@ -1,0 +1,8 @@
+# Points of the GTA look: names only, no icons. Labels come out in capitals because the GTA
+# build leaves out mkgmap's --lower-case. Label sizes and colours are in the TYP.
+
+place=city    & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0300 resolution 18]
+place=town    & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0700 resolution 18]
+place=village & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0a00 resolution 20]
+place=suburb  & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0b00 resolution 22]
+place=hamlet  & name=* & mkgmap:area2poi!=true { name '${name}' } [0x0d00 resolution 22]

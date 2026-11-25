@@ -1,0 +1,37 @@
+# Areas of the GTA look: green land, grey town ground, blue-grey houses, cyan water.
+# Fields, meadows and everything not listed here stay the colour of the land.
+# Stacking order is [_drawOrder] in the TYP (typ/make_typ_gta.py).
+
+# Ground: squares over the whole map (scripts/ground_squares.py). At night the Edge 1060
+# paints the map background (0x4b) its own dark blue; these squares carry the land colour.
+gta:ground=yes [0x03 resolution 18]
+
+# Town ground
+landuse=residential | landuse=commercial | landuse=retail | landuse=industrial | landuse=railway
+  | landuse=construction | landuse=garages | landuse=brownfield | landuse=quarry | landuse=military
+  | landuse=education | landuse=institutional | landuse=religious | aeroway=aerodrome
+  | amenity=school | amenity=university | amenity=college | amenity=hospital
+  [0x01 resolution 18]
+
+# Forest: a shade darker than the land
+landuse=forest | natural=wood [0x50 resolution 18]
+
+# Parks, gardens, golf, cemeteries: the saturated green of the city parks
+leisure=park | leisure=garden | leisure=golf_course | landuse=village_green | landuse=recreation_ground
+  | landuse=cemetery | amenity=grave_yard
+  [0x17 resolution 20]
+
+# Sand
+natural=beach | natural=sand [0x0c resolution 22]
+
+# Wetland: water and land in a pattern
+natural=wetland [0x51 resolution 22]
+
+# Water
+natural=water | waterway=riverbank | landuse=reservoir | landuse=basin [0x3c resolution 18]
+
+# Squares and pedestrian areas: the road colour
+(highway=pedestrian & area=yes) | place=square [0x04 resolution 23]
+
+# Houses, flat (no 3D on a Garmin)
+building=* & building!=no [0x13 resolution 23]

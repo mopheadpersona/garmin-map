@@ -1,0 +1,133 @@
+# Lines of the GTA look: roads in one grey with the class in the width; motorways with gold lanes,
+# primary and secondary roads with pale yellow lanes; gravel roads and cycleways a darker grey;
+# trails and rough tracks darker still, at the closest level only. No routes, sidewalks or tunnels.
+#
+# One Garmin type per class and map level, because a TYP width is fixed per type:
+#   0x10dSS  resolution 24       0x119SS  resolution 21
+#   0x111SS  resolution 23       0x11aSS  resolution 20
+#   0x115SS  resolution 22       0x11bSS  resolution 18-19
+# SS is the class (table in typ/make_typ_gta.py). Only SS 0x00-0x0f is used: those are the
+# numbers seen drawn on the Edge 1060 for every range (experiments/edge1060/README.md).
+
+# ---------------------------------------------------------------------------
+# 1. Classes
+# ---------------------------------------------------------------------------
+
+highway=* & area=yes { set gta:cls=none }
+highway=* & tunnel=yes { set gta:cls=none }
+railway=* & tunnel=yes { set gta:cls=none }
+waterway=* & tunnel=* & tunnel!=no { set gta:cls=none }
+
+gta:cls!=* & (highway=motorway | highway=trunk) { set gta:cls=motorway }
+gta:cls!=* & (highway=motorway_link | highway=trunk_link) { set gta:cls=ramp }
+gta:cls!=* & highway=primary { set gta:cls=primary }
+gta:cls!=* & highway=secondary { set gta:cls=secondary }
+gta:cls!=* & (highway=tertiary | highway=unclassified) { set gta:cls=tertiary }
+gta:cls!=* & (highway=primary_link | highway=secondary_link | highway=tertiary_link) { set gta:cls=street }
+gta:cls!=* & (highway=residential | highway=living_street | highway=road | highway=pedestrian) { set gta:cls=street }
+gta:cls!=* & highway=service & service!=driveway & service!=parking_aisle & service!=drive-through
+  & service!=emergency_access { set gta:cls=service }
+
+# Gravel roads and cycleways: one darker grey.
+gta:cls!=* & highway=cycleway { set gta:cls=gravel }
+gta:cls!=* & (highway=path | highway=footway) & bicycle=designated { set gta:cls=gravel }
+
+# Trails and rough tracks (grade 4-5, soft surfaces): a darker grey still, only at the closest level.
+gta:cls!=* & highway=track & (tracktype=grade4 | tracktype=grade5) { set gta:cls=trail }
+gta:cls!=* & highway=track & tracktype!=grade1 & tracktype!=grade2 & tracktype!=grade3
+  & (surface=ground | surface=grass | surface=dirt | surface=earth | surface=mud | surface=sand)
+  { set gta:cls=trail }
+gta:cls!=* & highway=track { set gta:cls=gravel }
+
+# Sidewalks, crossings and footways inside towns stay out, as in the main style.
+highway=footway & (footway=sidewalk | footway=crossing | footway=traffic_island | footway=access_aisle)
+  { set gta:cls=none }
+highway=footway & gta:cls!=* & is_in(landuse,residential,none)=false { set gta:cls=none }
+gta:cls!=* & (highway=path | highway=footway | highway=bridleway) { set gta:cls=trail }
+
+gta:cls!=* & railway=rail & service!=* { set gta:cls=rail }
+gta:cls!=* & railway=rail { set gta:cls=rail_yard }
+
+gta:cls!=* & aeroway=runway { set gta:cls=runway }
+gta:cls!=* & aeroway=taxiway { set gta:cls=taxiway }
+
+gta:cls!=* & (waterway=river | waterway=canal) { set gta:cls=river }
+gta:cls!=* & waterway=stream { set gta:cls=stream }
+
+# ---------------------------------------------------------------------------
+# 2. Classes -> types per map level
+# ---------------------------------------------------------------------------
+
+gta:cls=stream [0x11100 resolution 23-23 continue]
+gta:cls=stream [0x10d00 resolution 24]
+
+gta:cls=river [0x11b01 resolution 18-19 continue]
+gta:cls=river [0x11a01 resolution 20-20 continue]
+gta:cls=river [0x11901 resolution 21-21 continue]
+gta:cls=river [0x11501 resolution 22-22 continue]
+gta:cls=river [0x11101 resolution 23-23 continue]
+gta:cls=river [0x10d01 resolution 24]
+
+gta:cls=rail_yard [0x11102 resolution 23-23 continue]
+gta:cls=rail_yard [0x10d02 resolution 24]
+
+gta:cls=rail [0x11b03 resolution 18-19 continue]
+gta:cls=rail [0x11a03 resolution 20-20 continue]
+gta:cls=rail [0x11903 resolution 21-21 continue]
+gta:cls=rail [0x11503 resolution 22-22 continue]
+gta:cls=rail [0x11103 resolution 23-23 continue]
+gta:cls=rail [0x10d03 resolution 24]
+
+gta:cls=taxiway [0x11104 resolution 23-23 continue]
+gta:cls=taxiway [0x10d04 resolution 24]
+
+gta:cls=runway [0x11905 resolution 21-21 continue]
+gta:cls=runway [0x11505 resolution 22-22 continue]
+gta:cls=runway [0x11105 resolution 23-23 continue]
+gta:cls=runway [0x10d05 resolution 24]
+
+gta:cls=trail [0x10d0e resolution 24]
+
+gta:cls=gravel [0x1150d resolution 22-22 continue]
+gta:cls=gravel [0x1110d resolution 23-23 continue]
+gta:cls=gravel [0x10d0d resolution 24]
+
+gta:cls=service [0x11106 resolution 23-23 continue]
+gta:cls=service [0x10d06 resolution 24]
+
+gta:cls=street [0x11907 resolution 21-21 continue]
+gta:cls=street [0x11507 resolution 22-22 continue]
+gta:cls=street [0x11107 resolution 23-23 continue]
+gta:cls=street [0x10d07 resolution 24]
+
+gta:cls=tertiary [0x11a08 resolution 20-20 continue]
+gta:cls=tertiary [0x11908 resolution 21-21 continue]
+gta:cls=tertiary [0x11508 resolution 22-22 continue]
+gta:cls=tertiary [0x11108 resolution 23-23 continue]
+gta:cls=tertiary [0x10d08 resolution 24]
+
+gta:cls=secondary [0x11b09 resolution 19-19 continue]
+gta:cls=secondary [0x11a09 resolution 20-20 continue]
+gta:cls=secondary [0x11909 resolution 21-21 continue]
+gta:cls=secondary [0x11509 resolution 22-22 continue]
+gta:cls=secondary [0x11109 resolution 23-23 continue]
+gta:cls=secondary [0x10d09 resolution 24]
+
+gta:cls=primary [0x11b0a resolution 18-19 continue]
+gta:cls=primary [0x11a0a resolution 20-20 continue]
+gta:cls=primary [0x1190a resolution 21-21 continue]
+gta:cls=primary [0x1150a resolution 22-22 continue]
+gta:cls=primary [0x1110a resolution 23-23 continue]
+gta:cls=primary [0x10d0a resolution 24]
+
+gta:cls=ramp [0x1190b resolution 21-21 continue]
+gta:cls=ramp [0x1150b resolution 22-22 continue]
+gta:cls=ramp [0x1110b resolution 23-23 continue]
+gta:cls=ramp [0x10d0b resolution 24]
+
+gta:cls=motorway [0x11b0c resolution 18-19 continue]
+gta:cls=motorway [0x11a0c resolution 20-20 continue]
+gta:cls=motorway [0x1190c resolution 21-21 continue]
+gta:cls=motorway [0x1150c resolution 22-22 continue]
+gta:cls=motorway [0x1110c resolution 23-23 continue]
+gta:cls=motorway [0x10d0c resolution 24]

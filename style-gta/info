@@ -1,0 +1,7 @@
+summary: Garmin Edge map in the style of the GTA 6 map
+version=0.1
+description {
+Everything in one road colour with the class in the width, houses, green land, cyan water,
+capital labels. Day colours from the light GTA 6 map, night colours from its dark map.
+Built with ./build.sh <region> --gta.
+}

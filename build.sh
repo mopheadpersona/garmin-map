@@ -1,13 +1,15 @@
 #!/bin/bash
 # Сборка карты Garmin для одного региона: выгрузка OSM -> вырезка -> splitter -> mkgmap -> out/<регион>.img
 #
-#   ./build.sh <регион> [--edge1060] [--update] [--force]
+#   ./build.sh <регион> [--edge1060 | --gta] [--update] [--force]
 #
 #   <регион>    имя файла regions/<регион>.conf
 #   --edge1060  карта для Edge 1050/1060: out/<регион>-1060.img. Эти приборы не рисуют узоры линий,
 #               поэтому пунктиры нарезаются настоящими штрихами (experiments/edge1060/README.md).
 #               Сборка дольше, карта вдвое больше: Прага около 8 минут, Чехия около 30 минут
 #               и до 8 ГБ временных файлов в build/edge1060/ (в конце удаляются)
+#   --gta       карта в стиле карты GTA 6 (style-gta/, typ/make_typ_gta.py): out/<регион>-gta.img,
+#               family id = MAP_ID + 200. Дороги одного цвета, дома, без троп, веломаршрутов и значков
 #   --update    заново скачать исходные выгрузки, даже если они уже лежат в data/
 #   --force     заново вырезать область, даже если вырезка свежее исходников
 
@@ -38,23 +40,26 @@ REGION=""
 UPDATE=0
 FORCE=0
 EDGE1060=0
+GTA=0
 for arg in "$@"; do
   case "$arg" in
     --update) UPDATE=1 ;;
     --force)  FORCE=1 ;;
     --edge1060) EDGE1060=1 ;;
-    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --gta) GTA=1 ;;
+    -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) die "неизвестный параметр $arg" ;;
     *)  [ -z "$REGION" ] || die "регион указан дважды"; REGION="$arg" ;;
   esac
 done
 if [ -z "$REGION" ]; then
-  echo "Использование: ./build.sh <регион> [--edge1060] [--update] [--force]"
+  echo "Использование: ./build.sh <регион> [--edge1060 | --gta] [--update] [--force]"
   echo "Доступные регионы:"
   ls regions/*.conf 2>/dev/null | sed 's|regions/||; s|\.conf$||; s|^|  |'
   exit 1
 fi
 
+[ "$EDGE1060$GTA" = 11 ] && die "--edge1060 и --gta вместе не собираются"
 CONF="regions/$REGION.conf"
 [ -f "$CONF" ] || die "нет файла $CONF"
 
@@ -84,12 +89,14 @@ OSMIUM="${OSMIUM:-$(find_tool osmium tools/env/bin/osmium)}" \
 [ -f "$SPLITTER_JAR" ] || die "нет tools/splitter-r*/splitter.jar"
 for f in options lines polygons points relations version; do
   [ -f "style/$f" ] || die "нет style/$f"
+  [ "$GTA" = 0 ] || [ -f "style-gta/$f" ] || die "нет style-gta/$f"
 done
 
 WORK="build/$REGION"
 mkdir -p data out "$WORK"
 STEPS=5
 [ "$EDGE1060" = 1 ] && STEPS=2          # дальше у варианта для Edge 1050/1060 свои шаги
+[ "$GTA" = 1 ] && STEPS=6
 
 # Итог: размер готовой карты и предупреждение о пределе Edge.
 report() {
@@ -172,6 +179,69 @@ if [ "$EDGE1060" = 1 ]; then
   EDGE1060_WORK="${EDGE1060_WORK:-$ROOT/build/edge1060}" \
     experiments/edge1060/build.sh "$REGION" default "$ROOT/out/$REGION-1060.img" "$ROOT"
   report "out/$REGION-1060.img"
+  exit 0
+fi
+
+# ---------- вариант в стиле GTA 6 ----------
+# Свои стиль и TYP, подложка из квадратов земли (для ночного режима Edge 1060), подписи заглавными
+# (без --lower-case), без значков. Рабочие файлы — в build/<регион>-gta.
+if [ "$GTA" = 1 ]; then
+  GWORK="build/$REGION-gta"
+  GFID=$((MAP_ID + 200))
+  GNAME="$NAME GTA"
+  rm -rf "$GWORK"
+  mkdir -p "$GWORK/split" "$GWORK/img"
+
+  step "3/6 Квадраты земли"
+  GBOX="$BBOX"
+  if [ -z "$GBOX" ]; then
+    GBOX=$("$OSMIUM" fileinfo -e -g data.bbox "$EXTRACT" | tr -d '()')
+  fi
+  python3 scripts/ground_squares.py "$GBOX" "$GWORK/ground.osm"
+  "$OSMIUM" merge --overwrite -o "$GWORK/data.osm.pbf" "$EXTRACT" "$GWORK/ground.osm"
+
+  step "4/6 Splitter"
+  "$JAVA" "-Xmx$JAVA_HEAP" -jar "$SPLITTER_JAR" \
+    --output-dir="$GWORK/split" \
+    --mapid="${GFID}0001" \
+    --max-nodes=1200000 \
+    --keep-complete=true \
+    --description="$GNAME" \
+    "$GWORK/data.osm.pbf" > "$GWORK/splitter.log" 2>&1 || { tail -30 "$GWORK/splitter.log"; die "splitter упал, см. $GWORK/splitter.log"; }
+  rm -f "$GWORK/data.osm.pbf"
+  echo "Тайлов: $(ls "$GWORK/split"/*.osm.pbf | wc -l | tr -d ' ')"
+
+  step "5/6 TYP"
+  python3 typ/make_typ_gta.py "$GWORK/typ-src.txt"
+  sed -e "s/@FID@/$GFID/" -e "s/@CODEPAGE@/$CODE_PAGE/" "$GWORK/typ-src.txt" > "$GWORK/$REGION-gta-typ.txt"
+
+  step "6/6 mkgmap"
+  "$JAVA" "-Xmx$JAVA_HEAP" -jar "$MKGMAP_JAR" \
+    --output-dir="$GWORK/img" \
+    --style-file=style-gta \
+    --family-id="$GFID" \
+    --product-id=1 \
+    --family-name="$GNAME" \
+    --series-name="$GNAME" \
+    --area-name="$GNAME" \
+    --code-page="$CODE_PAGE" \
+    --order-by-decreasing-area \
+    --merge-lines \
+    --draw-priority="$DRAW_PRIORITY" \
+    --gmapsupp \
+    -c "$GWORK/split/template.args" \
+    "$GWORK/$REGION-gta-typ.txt" > "$GWORK/mkgmap.log" 2>&1 || { tail -40 "$GWORK/mkgmap.log"; die "mkgmap упал, см. $GWORK/mkgmap.log"; }
+  ERR_RE='^SEVERE|^ERROR|Error in style|Exception in thread|^java\.|Number of (MapFailed|Exit)Exceptions: [1-9]'
+  if grep -q -E "$ERR_RE" "$GWORK/mkgmap.log"; then
+    grep -E -A3 "$ERR_RE" "$GWORK/mkgmap.log" | head -40
+    die "mkgmap сообщил об ошибках, см. $GWORK/mkgmap.log"
+  fi
+  warnings=$(grep -E "^WARNING" "$GWORK/mkgmap.log" | grep -c -v "Setting max-jobs" | tr -d ' ' || true)
+  [ "$warnings" = 0 ] || echo "Предупреждений mkgmap: $warnings (см. $GWORK/mkgmap.log)"
+  [ -f "$GWORK/img/gmapsupp.img" ] || die "mkgmap не создал gmapsupp.img, см. $GWORK/mkgmap.log"
+  cp "$GWORK/img/gmapsupp.img" "out/$REGION-gta.img"
+  [ "${GTA_KEEP:-}" = 1 ] || rm -rf "$GWORK/split" "$GWORK/img"      # GTA_KEEP=1: tiles stay, for a new TYP
+  report "out/$REGION-gta.img"
   exit 0
 fi
 

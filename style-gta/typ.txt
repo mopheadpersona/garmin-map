@@ -1,0 +1,814 @@
+; -*- coding: utf-8 -*-
+; Written by typ/make_typ_gta.py, do not edit: change the tables of the script.
+; build.sh puts in @FID@ and @CODEPAGE@.
+
+[_id]
+ProductCode=1
+FID=@FID@
+CodePage=@CODEPAGE@
+[end]
+
+[_drawOrder]
+Type=0x4b,1
+Type=0x03,2
+Type=0x01,3
+Type=0x50,4
+Type=0x17,5
+Type=0x0c,5
+Type=0x51,6
+Type=0x3c,7
+Type=0x04,8
+Type=0x13,9
+[end]
+
+[_polygon]
+; Map background
+Type=0x4b
+Xpm="0 0 2 0"
+"X c #6D9985"
+"3 c #0E142C"
+[end]
+
+[_polygon]
+; Ground (squares under the map, for night mode)
+Type=0x03
+Xpm="0 0 2 0"
+"X c #6D9985"
+"3 c #0E142C"
+[end]
+
+[_polygon]
+; Town ground
+Type=0x01
+Xpm="0 0 2 0"
+"X c #9EA5AC"
+"3 c #2C3B5E"
+[end]
+
+[_polygon]
+; Forest
+Type=0x50
+Xpm="0 0 2 0"
+"X c #5F8C70"
+"3 c #122036"
+[end]
+
+[_polygon]
+; Park, garden, cemetery
+Type=0x17
+Xpm="0 0 2 0"
+"X c #50866D"
+"3 c #16293C"
+[end]
+
+[_polygon]
+; Sand
+Type=0x0c
+Xpm="0 0 2 0"
+"X c #E3D5A6"
+"3 c #3C3F55"
+[end]
+
+[_polygon]
+; Wetland
+Type=0x51
+Xpm="32 32 4 1"
+"X c #51ABC3"
+". c #6D9985"
+"3 c #3E4274"
+"4 c #0E142C"
+"................XXX............."
+"...................X............"
+"....XXX..........XXXXX.........."
+"...XXXXX.........XXXXX.........."
+"..XXXXXXX.......XXXXXXX........."
+".XXXXXXXXX.......XXXXX.........."
+".XXXXXXXXX.......XXXXX.........."
+".XXXXXXXXX.........X............"
+"..XXXXXXX......................."
+"...XXXXX........................"
+"....XXX..................XXXXX.."
+"........................XXXXXXX."
+".......................XXXXXXXXX"
+"............X..........XXXXXXXXX"
+".........XXXXXXX.......XXXXXXXXX"
+"........XXXXXXXXX......XXXXXXXXX"
+"........XXXXXXXXX......XXXXXXXXX"
+"........XXXXXXXXX.......XXXXXXX."
+".......XXXXXXXXXXX.......XXXXX.."
+"........XXXXXXXXX..............."
+"........XXXXXXXXX..............."
+"........XXXXXXXXX..............."
+".........XXXXXXX................"
+"..XXX.......X..................."
+".XXXXX.................XXX......"
+"XXXXXXX...............XXXXX....."
+"XXXXXXX..............XXXXXXX...."
+"XXXXXXX..............XXXXXXX...."
+".XXXXX..........XXX..XXXXXXX...."
+"..XXX..........XXXXX..XXXXX....."
+"...............XXXXX...XXX......"
+"...............XXXXX............"
+[end]
+
+[_polygon]
+; Water
+Type=0x3c
+Xpm="0 0 2 0"
+"X c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_polygon]
+; Square, pedestrian area
+Type=0x04
+Xpm="0 0 2 0"
+"X c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_polygon]
+; House
+Type=0x13
+Xpm="0 0 2 0"
+"X c #9DACBF"
+"3 c #46567B"
+[end]
+
+[_line]
+; Stream, resolution 24
+Type=0x10d00
+LineWidth=3
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; Stream, resolution 23
+Type=0x11100
+LineWidth=2
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; River, canal, resolution 24
+Type=0x10d01
+LineWidth=9
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; River, canal, resolution 23
+Type=0x11101
+LineWidth=7
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; River, canal, resolution 22
+Type=0x11501
+LineWidth=6
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; River, canal, resolution 21
+Type=0x11901
+LineWidth=5
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; River, canal, resolution 20
+Type=0x11a01
+LineWidth=4
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; River, canal, resolution 18-19
+Type=0x11b01
+LineWidth=3
+Xpm="0 0 2 0"
+"1 c #49A2BA"
+"3 c #474A80"
+[end]
+
+[_line]
+; Railway yard, resolution 24
+Type=0x10d02
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #A5B4CA"
+"2 c #8C9AB2"
+"3 c #5A6688"
+"4 c #3E4A6A"
+[end]
+
+[_line]
+; Railway yard, resolution 23
+Type=0x11102
+LineWidth=1
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #A5B4CA"
+"2 c #8C9AB2"
+"3 c #5A6688"
+"4 c #3E4A6A"
+[end]
+
+[_line]
+; Railway, resolution 24
+Type=0x10d03
+LineWidth=3
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #A5B4CA"
+"2 c #8C9AB2"
+"3 c #5A6688"
+"4 c #3E4A6A"
+[end]
+
+[_line]
+; Railway, resolution 23
+Type=0x11103
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #A5B4CA"
+"2 c #8C9AB2"
+"3 c #5A6688"
+"4 c #3E4A6A"
+[end]
+
+[_line]
+; Railway, resolution 22
+Type=0x11503
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #A5B4CA"
+"2 c #8C9AB2"
+"3 c #5A6688"
+"4 c #3E4A6A"
+[end]
+
+[_line]
+; Railway, resolution 21
+Type=0x11903
+LineWidth=1
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #A5B4CA"
+"2 c #8C9AB2"
+"3 c #5A6688"
+"4 c #3E4A6A"
+[end]
+
+[_line]
+; Railway, resolution 20
+Type=0x11a03
+LineWidth=1
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #A5B4CA"
+"2 c #8C9AB2"
+"3 c #5A6688"
+"4 c #3E4A6A"
+[end]
+
+[_line]
+; Railway, resolution 18-19
+Type=0x11b03
+LineWidth=2
+Xpm="0 0 2 0"
+"1 c #A5B4CA"
+"3 c #5A6688"
+[end]
+
+[_line]
+; Taxiway, resolution 24
+Type=0x10d04
+LineWidth=8
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Taxiway, resolution 23
+Type=0x11104
+LineWidth=5
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Runway, resolution 24
+Type=0x10d05
+LineWidth=26
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Runway, resolution 23
+Type=0x11105
+LineWidth=16
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Runway, resolution 22
+Type=0x11505
+LineWidth=11
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Runway, resolution 21
+Type=0x11905
+LineWidth=7
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Service road, resolution 24
+Type=0x10d06
+LineWidth=7
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Service road, resolution 23
+Type=0x11106
+LineWidth=5
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Street, resolution 24
+Type=0x10d07
+LineWidth=12
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Street, resolution 23
+Type=0x11107
+LineWidth=8
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Street, resolution 22
+Type=0x11507
+LineWidth=5
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Street, resolution 21
+Type=0x11907
+LineWidth=3
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Tertiary road, resolution 24
+Type=0x10d08
+LineWidth=14
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Tertiary road, resolution 23
+Type=0x11108
+LineWidth=10
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Tertiary road, resolution 22
+Type=0x11508
+LineWidth=7
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Tertiary road, resolution 21
+Type=0x11908
+LineWidth=5
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Tertiary road, resolution 20
+Type=0x11a08
+LineWidth=3
+Xpm="0 0 2 0"
+"1 c #D1D2DC"
+"3 c #9094AA"
+[end]
+
+[_line]
+; Secondary road, resolution 24
+Type=0x10d09
+LineWidth=6
+BorderWidth=5
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Secondary road, resolution 23
+Type=0x11109
+LineWidth=4
+BorderWidth=4
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Secondary road, resolution 22
+Type=0x11509
+LineWidth=3
+BorderWidth=3
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Secondary road, resolution 21
+Type=0x11909
+LineWidth=2
+BorderWidth=2
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Secondary road, resolution 20
+Type=0x11a09
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Secondary road, resolution 18-19
+Type=0x11b09
+LineWidth=1
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Primary road, resolution 24
+Type=0x10d0a
+LineWidth=7
+BorderWidth=5
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Primary road, resolution 23
+Type=0x1110a
+LineWidth=4
+BorderWidth=4
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Primary road, resolution 22
+Type=0x1150a
+LineWidth=3
+BorderWidth=3
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Primary road, resolution 21
+Type=0x1190a
+LineWidth=3
+BorderWidth=2
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Primary road, resolution 20
+Type=0x11a0a
+LineWidth=3
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Primary road, resolution 18-19
+Type=0x11b0a
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #E3D6AE"
+"2 c #D1D2DC"
+"3 c #C2B993"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway ramp, resolution 24
+Type=0x10d0b
+LineWidth=5
+BorderWidth=3
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway ramp, resolution 23
+Type=0x1110b
+LineWidth=4
+BorderWidth=2
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway ramp, resolution 22
+Type=0x1150b
+LineWidth=3
+BorderWidth=2
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway ramp, resolution 21
+Type=0x1190b
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway, trunk road, resolution 24
+Type=0x10d0c
+LineWidth=10
+BorderWidth=4
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway, trunk road, resolution 23
+Type=0x1110c
+LineWidth=7
+BorderWidth=3
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway, trunk road, resolution 22
+Type=0x1150c
+LineWidth=5
+BorderWidth=3
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway, trunk road, resolution 21
+Type=0x1190c
+LineWidth=4
+BorderWidth=2
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway, trunk road, resolution 20
+Type=0x11a0c
+LineWidth=3
+BorderWidth=2
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Motorway, trunk road, resolution 18-19
+Type=0x11b0c
+LineWidth=3
+BorderWidth=1
+Xpm="0 0 4 0"
+"1 c #BCA36B"
+"2 c #D1D2DC"
+"3 c #A38B57"
+"4 c #9094AA"
+[end]
+
+[_line]
+; Gravel road, cycleway, resolution 24
+Type=0x10d0d
+LineWidth=6
+Xpm="0 0 2 0"
+"1 c #BFBFC7"
+"3 c #6E7288"
+[end]
+
+[_line]
+; Gravel road, cycleway, resolution 23
+Type=0x1110d
+LineWidth=4
+Xpm="0 0 2 0"
+"1 c #BFBFC7"
+"3 c #6E7288"
+[end]
+
+[_line]
+; Gravel road, cycleway, resolution 22
+Type=0x1150d
+LineWidth=3
+Xpm="0 0 2 0"
+"1 c #BFBFC7"
+"3 c #6E7288"
+[end]
+
+[_line]
+; Trail, rough track, resolution 24
+Type=0x10d0e
+LineWidth=6
+Xpm="0 0 2 0"
+"1 c #A3A3AD"
+"3 c #555A72"
+[end]
+
+[_point]
+; City
+Type=0x0300
+ExtendedLabels=Y
+FontStyle=LargeFont
+DayCustomColor=#000000
+NightCustomColor=#F2F4FA
+DayXpm="1 1 1 1"
+". c none"
+"."
+[end]
+
+[_point]
+; Town
+Type=0x0700
+ExtendedLabels=Y
+FontStyle=LargeFont
+DayCustomColor=#000000
+NightCustomColor=#F2F4FA
+DayXpm="1 1 1 1"
+". c none"
+"."
+[end]
+
+[_point]
+; Village
+Type=0x0a00
+ExtendedLabels=Y
+FontStyle=NormalFont
+DayCustomColor=#000000
+NightCustomColor=#F2F4FA
+DayXpm="1 1 1 1"
+". c none"
+"."
+[end]
+
+[_point]
+; District
+Type=0x0b00
+ExtendedLabels=Y
+FontStyle=NormalFont
+DayCustomColor=#000000
+NightCustomColor=#F2F4FA
+DayXpm="1 1 1 1"
+". c none"
+"."
+[end]
+
+[_point]
+; Hamlet
+Type=0x0d00
+ExtendedLabels=Y
+FontStyle=SmallFont
+DayCustomColor=#000000
+NightCustomColor=#F2F4FA
+DayXpm="1 1 1 1"
+". c none"
+"."
+[end]
