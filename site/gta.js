@@ -224,7 +224,7 @@ async function build() {
   buildKey();
   setupDownload();
   try {
-    const response = await fetch('data/gta.json');
+    const response = await fetch('data/gta.json', { cache: 'no-cache' });
     if (!response.ok) throw new Error(String(response.status));
     view.data = await response.json();
   } catch (error) {

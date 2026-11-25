@@ -21,6 +21,7 @@ Pages включился сам при первой отправке ветки 
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -88,6 +89,33 @@ def split_map(entry, target_dir):
     return result
 
 
+def stamp_page():
+    """Метка версии в ссылках на файлы страницы: style.css?v=…, app.js?v=… и импорты внутри app.js.
+
+    GitHub Pages разрешает браузеру держать каждый файл 10 минут. Без метки свежая index.html
+    могла встретиться со старым app.js и i18n.js из кэша: на кнопках оставались ключи текстов.
+    С меткой новая страница всегда грузит свои скрипты, а старая — свои.
+    """
+    digest = hashlib.sha256()
+    for name in PAGE_FILES:
+        with open(os.path.join(DIST, name), "rb") as handle:
+            digest.update(handle.read())
+    version = digest.hexdigest()[:10]
+    rules = [
+        ("index.html", r'(href|src)="(style\.css|gta\.css|app\.js)"', r'\1="\2?v=%s"' % version, 3),
+        ("app.js", r"from '\./(i18n|gta)\.js'", r"from './\1.js?v=%s'" % version, 2),
+    ]
+    for name, pattern, replacement, expected in rules:
+        path = os.path.join(DIST, name)
+        with open(path, encoding="utf-8") as handle:
+            text, count = re.subn(pattern, replacement, handle.read())
+        if count != expected:
+            die("в %s найдено %d ссылок для метки версии вместо %d: поправьте stamp_page()" % (name, count, expected))
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(text)
+    return version
+
+
 def cmd_dist():
     with open(os.path.join(SITE, "data", "maps.json"), encoding="utf-8") as handle:
         maps = json.load(handle)
@@ -97,6 +125,7 @@ def cmd_dist():
     os.makedirs(os.path.join(DIST, "maps"))
     for name in PAGE_FILES:
         shutil.copy(os.path.join(SITE, name), os.path.join(DIST, name))
+    print("метка версии страницы: %s" % stamp_page())
     shutil.copytree(os.path.join(SITE, "data"), os.path.join(DIST, "data"),
                     ignore=shutil.ignore_patterns(".DS_Store", "maps.json"))
     listing = []
