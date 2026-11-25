@@ -5,6 +5,7 @@
     python3 scripts/make_site.py maps            # карты, которые страница отдаёт на выгрузку
     python3 scripts/make_site.py frames [кадр]   # перекрашиваемые кадры: QMapShack, ~10 с на снимок
     python3 scripts/make_site.py titles          # названия мест из SCENES в готовые кадры, без пересъёмки
+    python3 scripts/make_site.py gta             # кадры карты в стиле GTA VI, день и ночь (нужен GTA_KEEP=1 ./build.sh prague --gta)
     python3 scripts/make_site.py all
 
 Страница ничего не собирает на сервере. Она опирается на два свойства формата.
@@ -33,6 +34,7 @@ import json
 import math
 import os
 import random
+import re
 import shutil
 import struct
 import subprocess
@@ -80,6 +82,20 @@ SCENES = [
     ("brdy-forest", tr("Forest", "Les"),                      49.7001, 13.8561, ("2-500m", "3-150m")),  # Средние Брды
     ("outskirts",   tr("Outskirts", "Okraj města"),           49.9760, 14.3930, ("2-500m", "3-150m")),  # Збраслав
 ]
+
+# Карта в стиле GTA VI (./build.sh <регион> --gta): готовый файл, цвета не меняются, у неё свой режим
+# страницы со своими кадрами, днём и ночью. Экраны: подпись, масштаб QMapShack, уровень карты,
+# который Edge 1050/1060 показывает на этом масштабе при Map Detail Less.
+GTA_REGION = "prague"
+GTA_SCREENS = [("500m", 10.0, 21), ("200m", 5.0, 22), ("80m", 1.5, 24)]
+# Места из SCENES и подпись под мини-картой: район и улица в середине кадра.
+GTA_SCENES = [
+    ("interchange", "Zdiby", ""),
+    ("center", "Staré Město", "Staroměstské náměstí"),
+    ("brdy-forest", "Brdy", "Hořovská"),
+    ("outskirts", "Zbraslav", "Zbraslavské náměstí"),
+]
+SHOOT = os.path.join(ROOT, "experiments", "edge1060", "shoot.py")
 
 # Легенда страницы: группы и подписи цветов. Все имена — из make_typ.PALETTE_NAMES.
 EDGE = tr("casing", "obrys")
@@ -365,6 +381,20 @@ def cmd_maps():
                             "file": "maps/%s.img" % name, "bytes": os.path.getsize(src),
                             "block": block, "typBlocks": blocks, "typSize": size})
             print("%s: %d МБ, TYP в блоках %s по %d байт" % (name, os.path.getsize(src) >> 20, blocks, block))
+    # Карта в стиле GTA VI отдаётся как есть: цвета в ней не меняются, таблицы байтов не нужно.
+    name = GTA_REGION + "-gta"
+    src = os.path.join(ROOT, "out", name + ".img")
+    if os.path.exists(src):
+        link = os.path.join(target_dir, name + ".img")
+        if os.path.lexists(link):
+            os.remove(link)
+        os.symlink(os.path.relpath(src, target_dir), link)
+        title = dict(MAPS)[GTA_REGION]
+        listing.append({"id": name, "region": GTA_REGION, "device": "gta", "title": title,
+                        "file": "maps/%s.img" % name, "bytes": os.path.getsize(src)})
+        print("%s: %d МБ, готовый файл" % (name, os.path.getsize(src) >> 20))
+    else:
+        print("нет out/%s.img — пропущена (./build.sh %s --gta)" % (name, GTA_REGION))
     with open(os.path.join(DATA, "maps.json"), "w", encoding="utf-8") as handle:
         json.dump(listing, handle, ensure_ascii=False, indent=1)
 
@@ -509,6 +539,95 @@ def cmd_titles():
     print("названия мест обновлены: %d кадров" % len(index["frames"]))
 
 
+# --------------------------------------------------------------------------
+# gta: кадры режима «GTA VI» — день и ночь
+# --------------------------------------------------------------------------
+def night_as_day(text):
+    """TYP, где ночные цвета записаны дневными: QMapShack ночной режим не показывает."""
+    out = []
+    for block in re.split(r"(?<=\[end\]\n)", text):
+        if block.lstrip().startswith(("[_polygon]", "[_line]")):
+            colours = re.findall(r'^"(\S) c (#[0-9A-Fa-f]{6}|none)"$', block, re.M)
+            tags, values = [tag for tag, _ in colours], dict(colours)
+            if 'Xpm="32 32 4 1"' in block:                    # узор: X и . днём, 3 и 4 ночью
+                block = block.replace('"X c %s"' % values["X"], '"X c %s"' % values["3"], 1)
+                block = block.replace('". c %s"' % values["."], '". c %s"' % values["4"], 1)
+            elif len(tags) == 2:                              # день, ночь
+                block = block.replace('"%s c %s"' % (tags[0], values[tags[0]]),
+                                      '"%s c %s"' % (tags[0], values[tags[1]]), 1)
+            elif len(tags) == 4:                              # заливка, кайма, ночная заливка, ночная кайма
+                block = block.replace('"1 c %s"' % values["1"], '"1 c %s"' % values["3"], 1)
+                block = block.replace('"2 c %s"' % values["2"], '"2 c %s"' % values["4"], 1)
+        elif block.lstrip().startswith("[_point]"):
+            night = re.search(r"NightCustomColor=(#\w+)", block)
+            if night:
+                block = re.sub(r"DayCustomColor=#\w+", "DayCustomColor=" + night.group(1), block)
+        out.append(block)
+    return "".join(out)
+
+
+def cmd_gta():
+    """Кадры карты в стиле GTA VI днём и ночью: site/data/gta/ и site/data/gta.json.
+
+    Ночь снимается с копии карты, собранной из тех же тайлов с ночными цветами вместо дневных,
+    поэтому нужна сборка с сохранёнными тайлами: GTA_KEEP=1 ./build.sh prague --gta.
+    """
+    name = GTA_REGION + "-gta"
+    day_img = os.path.join(ROOT, "out", name + ".img")
+    work = os.path.join(ROOT, "build", name)
+    tiles = sorted(glob.glob(os.path.join(work, "img", "[0-9]*.img")))
+    typ_src = os.path.join(work, name + "-typ.txt")
+    if not os.path.exists(day_img) or not tiles or not os.path.exists(typ_src):
+        die("нужна сборка с тайлами: GTA_KEEP=1 ./build.sh %s --gta" % GTA_REGION)
+    if os.path.getmtime(tiles[0]) < os.path.getmtime(day_img) - 600:
+        die("тайлы в build/%s старше out/%s.img: GTA_KEEP=1 ./build.sh %s --gta" % (name, name, GTA_REGION))
+    with open(typ_src, encoding="utf-8") as handle:
+        typ_text_day = handle.read()
+    fid = re.search(r"^FID=(\d+)", typ_text_day, re.M).group(1)
+    code_page = re.search(r"^CodePage=(\d+)", typ_text_day, re.M).group(1)
+    java, mkgmap = tool_paths()
+    places = {scene: (title, lat, lon) for scene, title, lat, lon, _screens in SCENES}
+    target = os.path.join(DATA, "gta")
+    shutil.rmtree(target, ignore_errors=True)
+    os.makedirs(target)
+    with tempfile.TemporaryDirectory() as tmp:
+        night_typ = os.path.join(tmp, "night-typ.txt")
+        with open(night_typ, "w", encoding="utf-8") as handle:
+            handle.write(night_as_day(typ_text_day))
+        night_dir = os.path.join(tmp, "night")
+        os.makedirs(night_dir)
+        result = subprocess.run([java, "-Xmx2g", "-jar", mkgmap, "--output-dir=" + night_dir, "--gmapsupp",
+                                 "--family-id=" + fid, "--product-id=1", "--code-page=" + code_page,
+                                 "--family-name=GTA night", "--series-name=GTA night"] + tiles + [night_typ],
+                                capture_output=True, text=True)
+        night_img = os.path.join(night_dir, "gmapsupp.img")
+        if result.returncode or not os.path.exists(night_img):
+            die("mkgmap не собрал ночную копию:\n" + result.stdout[-2000:] + result.stderr[-2000:])
+        scenes = []
+        for scene, place, street in GTA_SCENES:
+            title, lat, lon = places[scene]
+            frames = {}
+            for variant, img in (("day", day_img), ("night", night_img)):
+                shots_dir = os.path.join(tmp, "%s-%s" % (scene, variant))
+                args = ["%g:%d:%s" % (zoom, bits, label) for label, zoom, bits in GTA_SCREENS]
+                run = subprocess.run([sys.executable, SHOOT, ROOT, img, shots_dir, "v", "%.4f,%.4f" % (lat, lon)] + args,
+                                     capture_output=True, text=True)
+                if run.returncode:
+                    die("кадры %s (%s) не сняты:\n%s" % (scene, variant, run.stderr[-2000:]))
+                frames[variant] = {}
+                for label, _zoom, _bits in GTA_SCREENS:
+                    file = "%s_%s_%s.png" % (scene, label, variant)
+                    shutil.move(os.path.join(shots_dir, "v_%s.png" % label), os.path.join(target, file))
+                    frames[variant][label] = "data/gta/" + file
+                print("снято: %s, %s" % (scene, variant), flush=True)
+            scenes.append({"id": scene, "title": title, "place": place, "street": street, "frames": frames})
+    with open(os.path.join(DATA, "gta.json"), "w", encoding="utf-8") as handle:
+        json.dump({"screens": [label for label, _z, _b in GTA_SCREENS], "scenes": scenes},
+                  handle, ensure_ascii=False, indent=1)
+    size = sum(os.path.getsize(os.path.join(target, f)) for f in os.listdir(target))
+    print("site/data/gta: %d кадров, %d КБ" % (len(os.listdir(target)), size >> 10))
+
+
 def main():
     command = sys.argv[1] if len(sys.argv) > 1 else ""
     if command == "typ":
@@ -519,6 +638,8 @@ def main():
         cmd_maps()
     elif command == "frames":
         cmd_frames(sys.argv[2] if len(sys.argv) > 2 else None)
+    elif command == "gta":
+        cmd_gta()
     elif command == "all":
         cmd_typ()
         cmd_maps()

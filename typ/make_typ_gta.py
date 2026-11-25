@@ -3,7 +3,7 @@
 
     python3 typ/make_typ_gta.py [target]
 
-Day colours were measured from the light GTA 6 map (gtabase.com screenshots, 25.11.2026), night
+Day colours were measured from the light GTA VI map (gtabase.com screenshots, 25.11.2026), night
 colours from the dark in-game pause map. Those marked "estimated" had no sample and are guessed.
 Widths are screen pixels of the Edge 1050/1060 (267 ppi), one value per map level; the levels and
 their types are in style-gta/lines.

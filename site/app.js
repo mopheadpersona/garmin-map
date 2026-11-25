@@ -3,10 +3,12 @@
 //   data/scenes.json  — перекрашиваемые кадры;
 //   data/typ.json     — где в файле карты лежит каждый цвет; у карты для Edge 1050/1060 своя таблица, data/typ-1060.json;
 //   data/maps.json    — карты на выгрузку, у каждой указан прибор (device);
-//   data/presets.json — готовые наборы цветов (правится руками).
+//   data/presets.json — готовые наборы цветов (правится руками);
+//   data/gta.json     — кадры режима «GTA VI style» (gta.js): готовая карта, цвета в ней не меняются.
 // Тексты интерфейса — в i18n.js; названия из данных приходят сразу на всех языках.
 
 import { LANGUAGES, STRINGS } from './i18n.js';
+import { applyMode, isGta, refreshGta, setupGta } from './gta.js';
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -104,7 +106,7 @@ function initialLanguage() {
 
 function applyStaticTexts() {
   document.documentElement.lang = state.language;
-  document.title = t('pageTitle');
+  document.title = t(isGta() ? 'gtaPageTitle' : 'pageTitle');
   for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
   for (const node of document.querySelectorAll('[data-i18n-label]')) node.setAttribute('aria-label', t(node.dataset.i18nLabel));
   for (const node of document.querySelectorAll('[data-i18n-title]')) node.title = t(node.dataset.i18nTitle);
@@ -140,6 +142,7 @@ function setLanguage(code) {
     history.replaceState(null, '', url);
   }
   applyStaticTexts();
+  refreshGta();
   if (!state.names.length) return;               // данные ещё не загружены
   buildPresets();
   buildLegend();
@@ -1250,6 +1253,7 @@ window.mapColours = { state, checkFrame, recolourMap, sha256, parseColour, setLa
 // ---------------------------------------------------------------- запуск
 
 async function start() {
+  applyMode();                                    // ?map=gta: режим GTA сразу, без мелькания редактора
   state.language = initialLanguage();
   buildLanguages();
   applyStaticTexts();
@@ -1291,10 +1295,17 @@ async function start() {
 
   if (state.frames.length) {
     buildScenes();
-    await showFrame(state.frames[0]);
+    if (!isGta()) await showFrame(state.frames[0]);   // в режиме GTA кадры редактора грузятся, когда к нему вернутся
   } else {
     say($('#frame-status'), 'noFrames');
   }
+
+  setupGta({
+    t, pick, say, fetchMap, download,
+    maps: () => state.maps,
+    retitle: () => { document.title = t(isGta() ? 'gtaPageTitle' : 'pageTitle'); },
+    onColour: () => { if (state.frames.length && !state.frame) showFrame(state.frames[0]); },
+  });
 }
 
 start().catch((error) => {

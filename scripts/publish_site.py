@@ -39,7 +39,7 @@ AUTHOR_EMAIL = "39918189+mopheadpersona@users.noreply.github.com"
 
 PART_BYTES = 40 << 20
 PAGES_LIMIT = 1 << 30           # предел размера сайта на GitHub Pages (мягкий): 1 ГБ
-PAGE_FILES = ("index.html", "app.js", "i18n.js", "style.css")
+PAGE_FILES = ("index.html", "app.js", "i18n.js", "style.css", "gta.js", "gta.css")
 
 README = """# Map colours for Garmin Edge
 
